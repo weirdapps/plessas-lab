@@ -1,0 +1,115 @@
+{
+  "name": "claude-plugins-utility",
+  "owner": {
+    "name": "Giorgos Marinos"
+  },
+  "metadata": {
+    "description": "Skills for productivity, file management, and external services",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "manage-apple-notes",
+      "source": "./plugins/manage-apple-notes",
+      "description": "Interact with the Apple Notes app. CRUD operations for persistent storage of thoughts, data, and information across sessions.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "manage",
+        "apple",
+        "notes"
+      ],
+      "category": "integration"
+    },
+    {
+      "name": "manage-gmail",
+      "source": "./plugins/manage-gmail",
+      "description": "Access and process Gmail messages using the Gmail API. Use when the user asks to read, search, list, send, reply to, or forward emails. Supports OAuth 2.0 authentication with stored credentials.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "manage",
+        "gmail",
+        "api"
+      ],
+      "category": "integration"
+    },
+    {
+      "name": "manage-google-workspace",
+      "source": "./plugins/manage-google-workspace",
+      "description": "Manage Google Workspace files, folders, and documents using TypeScript CLI tools. Full support for Google Drive (list, search, upload, download, organize), Google Docs (create, read, edit, search), Google Sheets (CRUD, queries, multi-range operations), and Google Slides (presentations, slides, text). Manage sharing permissions. Use when user needs to interact with Google Drive or any Google Workspace document types.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "manage",
+        "google",
+        "workspace",
+        "typescript"
+      ],
+      "category": "integration"
+    },
+    {
+      "name": "manage-nano-banana",
+      "source": "./plugins/manage-nano-banana",
+      "description": "Generate and edit images, create diagrams, infographics, and visualizations using Google's Nano Banana API (Gemini Image Generation). Use when the user asks to create images, edit existing images, generate architecture diagrams, flowcharts, ERDs, timelines, or any visual artifacts.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "manage",
+        "nano",
+        "banana",
+        "api",
+        "google",
+        "image"
+      ],
+      "category": "integration"
+    },
+    {
+      "name": "manage-youtube",
+      "source": "./plugins/manage-youtube",
+      "description": "Search, discover, consume, and manage YouTube content using TypeScript CLI tools. Use when the user asks to search YouTube, get channel information, retrieve videos from a channel, get video transcripts, analyze YouTube content, manage favorite channels, organize saved videos with topics and thematics, or manage YouTube playlists (list, create, update, delete, add/remove videos). Works with channel handles (@username), URLs, or channel IDs. Includes both third-party API tools (no auth required) and official YouTube API tools (OAuth required for playlist management).",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "manage",
+        "youtube",
+        "api",
+        "typescript"
+      ],
+      "category": "integration"
+    },
+    {
+      "name": "pdf-splitter",
+      "source": "./plugins/pdf-splitter",
+      "description": "Split PDF files into individual pages as separate PDF or PNG files using TypeScript. Use when the user needs to extract pages from a PDF, convert PDF pages to images, or split a multi-page PDF into single-page files.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "pdf",
+        "splitter",
+        "typescript",
+        "image"
+      ],
+      "category": "productivity"
+    }
+  ]
+}

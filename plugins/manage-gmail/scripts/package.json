@@ -1,0 +1,27 @@
+{
+  "name": "gmail-operations",
+  "version": "1.0.0",
+  "description": "Gmail API Operations CLI for Claude Code",
+  "main": "dist/gmail-operations.js",
+  "bin": {
+    "gmail-operations": "dist/gmail-operations.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/gmail-operations.js",
+    "dev": "ts-node src/gmail-operations.ts"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
+    "commander": "^12.1.0",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

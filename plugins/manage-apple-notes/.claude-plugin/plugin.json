@@ -1,0 +1,16 @@
+{
+  "name": "manage-apple-notes",
+  "description": "Interact with the Apple Notes app. CRUD operations for persistent storage of thoughts, data, and information across sessions.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Giorgos Marinos"
+  },
+  "license": "MIT",
+  "keywords": [
+    "manage",
+    "apple",
+    "notes"
+  ],
+  "category": "integration",
+  "skills": "./skills"
+}

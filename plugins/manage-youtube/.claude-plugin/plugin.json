@@ -1,0 +1,17 @@
+{
+  "name": "manage-youtube",
+  "description": "Search, discover, consume, and manage YouTube content using TypeScript CLI tools. Use when the user asks to search YouTube, get channel information, retrieve videos from a channel, get video transcripts, analyze YouTube content, manage favorite channels, organize saved videos with topics and thematics, or manage YouTube playlists (list, create, update, delete, add/remove videos). Works with channel handles (@username), URLs, or channel IDs. Includes both third-party API tools (no auth required) and official YouTube API tools (OAuth required for playlist management).",
+  "version": "1.0.0",
+  "author": {
+    "name": "Giorgos Marinos"
+  },
+  "license": "MIT",
+  "keywords": [
+    "manage",
+    "youtube",
+    "api",
+    "typescript"
+  ],
+  "category": "integration",
+  "skills": "./skills"
+}

@@ -1,0 +1,37 @@
+name: Validate Plugins
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate marketplace.json
+        run: |
+          if [ ! -f ".claude-plugin/marketplace.json" ]; then
+            echo "Error: marketplace.json not found"
+            exit 1
+          fi
+          echo "marketplace.json found"
+          cat .claude-plugin/marketplace.json | python3 -m json.tool
+
+      - name: Validate plugin manifests
+        run: |
+          for dir in plugins/*/; do
+            if [ -d "$dir" ]; then
+              plugin_json="${dir}.claude-plugin/plugin.json"
+              if [ ! -f "$plugin_json" ]; then
+                echo "Error: Missing plugin.json in $dir"
+                exit 1
+              fi
+              echo "Validating $plugin_json"
+              cat "$plugin_json" | python3 -m json.tool
+            fi
+          done
+          echo "All plugin manifests valid"
