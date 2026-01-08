@@ -1,0 +1,19 @@
+{
+  "name": "nano-banana-tools",
+  "version": "1.0.0",
+  "description": "Prebuilt tools for Nano Banana API (Gemini Image Generation)",
+  "type": "module",
+  "scripts": {
+    "generate-image": "tsx generate-image.ts",
+    "edit-image": "tsx edit-image.ts",
+    "generate-diagram": "tsx generate-diagram.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^1.34.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

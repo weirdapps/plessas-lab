@@ -1,0 +1,31 @@
+{
+  "name": "google-drive-tools",
+  "version": "1.0.0",
+  "description": "TypeScript CLI tools for Google Drive API",
+  "type": "module",
+  "scripts": {
+    "list-files": "tsx drive-list-files.ts",
+    "get-file": "tsx drive-get-file.ts",
+    "download": "tsx drive-download.ts",
+    "export": "tsx drive-export.ts",
+    "upload": "tsx drive-upload.ts",
+    "folder": "tsx drive-folder.ts",
+    "delete": "tsx drive-delete.ts",
+    "move": "tsx drive-move.ts",
+    "copy": "tsx drive-copy.ts",
+    "search": "tsx drive-search.ts",
+    "permissions": "tsx drive-permissions.ts",
+    "docs": "tsx docs-manage.ts",
+    "sheets": "tsx sheets-manage.ts",
+    "slides": "tsx slides-manage.ts"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "open": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

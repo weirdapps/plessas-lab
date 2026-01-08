@@ -1,0 +1,19 @@
+{
+  "name": "manage-nano-banana",
+  "description": "Generate and edit images, create diagrams, infographics, and visualizations using Google's Nano Banana API (Gemini Image Generation). Use when the user asks to create images, edit existing images, generate architecture diagrams, flowcharts, ERDs, timelines, or any visual artifacts.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Giorgos Marinos"
+  },
+  "license": "MIT",
+  "keywords": [
+    "manage",
+    "nano",
+    "banana",
+    "api",
+    "google",
+    "image"
+  ],
+  "category": "integration",
+  "skills": "./skills"
+}

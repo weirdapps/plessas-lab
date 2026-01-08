@@ -1,0 +1,17 @@
+{
+  "name": "manage-google-workspace",
+  "description": "Manage Google Workspace files, folders, and documents using TypeScript CLI tools. Full support for Google Drive (list, search, upload, download, organize), Google Docs (create, read, edit, search), Google Sheets (CRUD, queries, multi-range operations), and Google Slides (presentations, slides, text). Manage sharing permissions. Use when user needs to interact with Google Drive or any Google Workspace document types.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Giorgos Marinos"
+  },
+  "license": "MIT",
+  "keywords": [
+    "manage",
+    "google",
+    "workspace",
+    "typescript"
+  ],
+  "category": "integration",
+  "skills": "./skills"
+}
