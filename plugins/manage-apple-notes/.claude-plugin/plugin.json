@@ -11,6 +11,5 @@
     "apple",
     "notes"
   ],
-  "category": "integration",
-  "skills": "./skills"
+  "commands": "./commands"
 }

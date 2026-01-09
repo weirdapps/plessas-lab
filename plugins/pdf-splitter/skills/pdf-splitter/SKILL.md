@@ -25,8 +25,8 @@ node ~/.claude/skills/pdf-splitter/tools/dist/index.js <input.pdf>
 node ~/.claude/skills/pdf-splitter/tools/dist/index.js -f png <input.pdf>
 
 # Alternative: use the shell wrapper
-~/.claude/skills/pdf-splitter/pdf-splitter.sh <input.pdf>
-~/.claude/skills/pdf-splitter/pdf-splitter.sh -f png <input.pdf>
+~/.claude/skills/pdf-splitter/scripts/pdf-splitter.sh <input.pdf>
+~/.claude/skills/pdf-splitter/scripts/pdf-splitter.sh -f png <input.pdf>
 ```
 
 **Options:**
@@ -81,9 +81,10 @@ npm run build
 │   ├── node_modules/             # Dependencies
 │   ├── package.json
 │   └── tsconfig.json
+├── scripts/
+│   └── pdf-splitter.sh           # Shell wrapper
 ├── docs/
 │   └── DESIGN.md                 # Implementation design document
-├── pdf-splitter.sh               # Shell wrapper
 └── SKILL.md                      # This file
 ```
 </project_structure>

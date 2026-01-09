@@ -12,6 +12,5 @@
     "typescript",
     "image"
   ],
-  "category": "productivity",
-  "skills": "./skills"
+  "commands": "./commands"
 }
