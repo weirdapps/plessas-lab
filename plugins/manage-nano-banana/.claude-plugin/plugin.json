@@ -14,6 +14,5 @@
     "google",
     "image"
   ],
-  "category": "integration",
-  "skills": "./skills"
+  "commands": "./commands"
 }

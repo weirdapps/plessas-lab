@@ -12,6 +12,5 @@
     "api",
     "typescript"
   ],
-  "category": "integration",
-  "skills": "./skills"
+  "commands": "./commands"
 }

@@ -22,8 +22,7 @@
         "manage",
         "apple",
         "notes"
-      ],
-      "category": "integration"
+      ]
     },
     {
       "name": "manage-gmail",
@@ -38,8 +37,7 @@
         "manage",
         "gmail",
         "api"
-      ],
-      "category": "integration"
+      ]
     },
     {
       "name": "manage-google-workspace",
@@ -55,8 +53,7 @@
         "google",
         "workspace",
         "typescript"
-      ],
-      "category": "integration"
+      ]
     },
     {
       "name": "manage-nano-banana",
@@ -74,8 +71,7 @@
         "api",
         "google",
         "image"
-      ],
-      "category": "integration"
+      ]
     },
     {
       "name": "manage-youtube",
@@ -91,8 +87,7 @@
         "youtube",
         "api",
         "typescript"
-      ],
-      "category": "integration"
+      ]
     },
     {
       "name": "pdf-splitter",
@@ -108,8 +103,7 @@
         "splitter",
         "typescript",
         "image"
-      ],
-      "category": "productivity"
+      ]
     }
   ]
 }

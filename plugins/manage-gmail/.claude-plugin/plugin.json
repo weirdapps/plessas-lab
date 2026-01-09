@@ -11,6 +11,5 @@
     "gmail",
     "api"
   ],
-  "category": "integration",
-  "skills": "./skills"
+  "commands": "./commands"
 }
