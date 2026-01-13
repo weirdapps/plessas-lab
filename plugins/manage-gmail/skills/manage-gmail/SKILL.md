@@ -370,6 +370,7 @@ The `send`, `reply`, `forward`, and `draft` commands support file attachments vi
 </success_criteria>
 
 <reference_guides>
+**First-time setup**: See [SETUP-CREDENTIALS.md](SETUP-CREDENTIALS.md) - How to configure credentials on first use
 **Search queries reference**: See [references/search-queries.md](references/search-queries.md)
 **API error codes**: See [references/error-handling.md](references/error-handling.md)
 **Scope reference**: See [references/scopes.md](references/scopes.md)
