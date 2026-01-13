@@ -827,6 +827,7 @@ A successful YouTube operation:
 
 <detailed_references>
 For complete implementation details and library documentation, see:
+- [SETUP-CREDENTIALS.md](SETUP-CREDENTIALS.md) - First-time credentials setup for playlist management
 - [references/youtube-guide.md](references/youtube-guide.md) - Full YouTube monitoring guide
 - [references/implementation-notes.md](references/implementation-notes.md) - Implementation details and troubleshooting
 - [references/video-organization.md](references/video-organization.md) - Video organization feature design and details

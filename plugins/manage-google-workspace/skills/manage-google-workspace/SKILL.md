@@ -554,6 +554,7 @@ name contains 'report' and mimeType = 'application/pdf' and trashed = false
 
 <detailed_references>
 For complete API details and advanced usage, see:
+- [SETUP-CREDENTIALS.md](SETUP-CREDENTIALS.md) - First-time credentials setup guide
 - [references/drive-operations.md](references/drive-operations.md) - Complete Drive API operations
 - [references/docs-sheets-slides.md](references/docs-sheets-slides.md) - Document, Spreadsheet, and Presentation APIs
 - [references/permissions.md](references/permissions.md) - Detailed sharing and permissions guide
