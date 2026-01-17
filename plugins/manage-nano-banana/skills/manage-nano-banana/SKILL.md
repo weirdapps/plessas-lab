@@ -3,6 +3,8 @@ name: manage-nano-banana
 description: Generate and edit images, create diagrams, infographics, and visualizations using Google's Nano Banana API (Gemini Image Generation). Use when the user asks to create images, edit existing images, generate architecture diagrams, flowcharts, ERDs, timelines, or any visual artifacts.
 ---
 
+> **Path Convention**: All paths in this document are relative to this skill's root directory. When executing commands, first `cd` to the skill directory or adjust paths accordingly.
+
 <objective>
 Enable Claude Code to create, edit, and generate visual content using Google's Nano Banana API. This skill provides prebuilt TypeScript tools to avoid code duplication and ensure consistent image generation across tasks.
 </objective>
@@ -23,14 +25,14 @@ Enable Claude Code to create, edit, and generate visual content using Google's N
 **Setup**: Ensure `GEMINI_API_KEY` is set in environment and install dependencies:
 
 ```bash
-cd ~/.claude/skills/manage-nano-banana/tools
+cd ./tools
 npm install
 ```
 
 **Generate an image**:
 
 ```bash
-npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-image.ts \
+npx tsx ./tools/generate-image.ts \
   --prompt "A watercolor painting of a fox in a snowy forest" \
   --output ./fox.png
 ```
@@ -38,7 +40,7 @@ npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-image.ts \
 **Edit an existing image**:
 
 ```bash
-npx tsx ~/.claude/skills/manage-nano-banana/tools/edit-image.ts \
+npx tsx ./tools/edit-image.ts \
   --input ./photo.png \
   --prompt "Change the blue car to red" \
   --output ./photo-edited.png
@@ -47,7 +49,7 @@ npx tsx ~/.claude/skills/manage-nano-banana/tools/edit-image.ts \
 **Generate a diagram**:
 
 ```bash
-npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-diagram.ts \
+npx tsx ./tools/generate-diagram.ts \
   --type architecture \
   --prompt "Microservices architecture with API Gateway, User Service, and Database" \
   --output ./architecture.png
@@ -61,7 +63,7 @@ npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-diagram.ts \
 Use `generate-image.ts` for creating images from text descriptions.
 
 ```bash
-npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-image.ts \
+npx tsx ./tools/generate-image.ts \
   --prompt "Your detailed prompt here" \
   --output ./output.png \
   --model gemini-2.5-flash-image \
@@ -83,7 +85,7 @@ npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-image.ts \
 Use `edit-image.ts` for modifying specific elements in existing images.
 
 ```bash
-npx tsx ~/.claude/skills/manage-nano-banana/tools/edit-image.ts \
+npx tsx ./tools/edit-image.ts \
   --input ./source.png \
   --prompt "Change the sofa to a brown leather chesterfield" \
   --output ./edited.png \
@@ -108,7 +110,7 @@ npx tsx ~/.claude/skills/manage-nano-banana/tools/edit-image.ts \
 Use `generate-diagram.ts` for creating technical diagrams, infographics, and visualizations.
 
 ```bash
-npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-diagram.ts \
+npx tsx ./tools/generate-diagram.ts \
   --type flowchart \
   --prompt "Authentication flow with 2FA" \
   --output ./auth-flow.png \
@@ -137,7 +139,7 @@ npx tsx ~/.claude/skills/manage-nano-banana/tools/generate-diagram.ts \
 </workflows>
 
 <prebuilt_tools>
-**Location**: `~/.claude/skills/manage-nano-banana/tools/`
+**Location**: `./tools/`
 
 | Tool | Purpose |
 |------|---------|

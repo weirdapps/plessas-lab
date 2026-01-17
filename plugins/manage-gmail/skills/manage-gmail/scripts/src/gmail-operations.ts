@@ -23,6 +23,13 @@ import { authenticate } from '@google-cloud/local-auth';
 import * as fs from 'fs';
 import * as path from 'path';
 import { OAuth2Client } from 'google-auth-library';
+import {
+  listAllContacts,
+  searchContacts,
+  addContact,
+  updateContact,
+  removeContact,
+} from './contacts-registry';
 
 // Paths for credentials and token
 const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '';
@@ -1176,6 +1183,115 @@ program
       const removeLabels = options.removeLabels ? options.removeLabels.split(',') : undefined;
       const result = await applyLabel(options.messageId, addLabels, removeLabels);
       outputResult(result);
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Contacts Registry Commands
+const contactsCmd = program
+  .command('contacts')
+  .description('Manage email contacts registry');
+
+contactsCmd
+  .command('list')
+  .description('List all contacts in the registry')
+  .action(async () => {
+    try {
+      const contacts = listAllContacts();
+      outputResult({
+        count: contacts.length,
+        contacts: contacts.map((c, i) => ({
+          index: i + 1,
+          name: c.name,
+          email: c.email,
+          formatted: `${c.name} <${c.email}>`,
+        })),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+contactsCmd
+  .command('search')
+  .description('Search contacts by name (case-insensitive partial match)')
+  .requiredOption('-n, --name <query>', 'Name to search for')
+  .action(async (options) => {
+    try {
+      const contacts = searchContacts(options.name);
+      outputResult({
+        query: options.name,
+        count: contacts.length,
+        contacts: contacts.map((c, i) => ({
+          index: i + 1,
+          name: c.name,
+          email: c.email,
+          formatted: `${c.name} <${c.email}>`,
+        })),
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+contactsCmd
+  .command('add')
+  .description('Add a new contact to the registry')
+  .requiredOption('-n, --name <name>', 'Full name of the contact')
+  .requiredOption('-e, --email <email>', 'Email address')
+  .action(async (options) => {
+    try {
+      const contact = addContact(options.name, options.email);
+      outputResult({
+        status: 'added',
+        contact: {
+          name: contact.name,
+          email: contact.email,
+          formatted: `${contact.name} <${contact.email}>`,
+        },
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+contactsCmd
+  .command('update')
+  .description('Update an existing contact\'s email (exact name match)')
+  .requiredOption('-n, --name <name>', 'Full name of the contact')
+  .requiredOption('-e, --email <email>', 'New email address')
+  .action(async (options) => {
+    try {
+      const contact = updateContact(options.name, options.email);
+      outputResult({
+        status: 'updated',
+        contact: {
+          name: contact.name,
+          email: contact.email,
+          formatted: `${contact.name} <${contact.email}>`,
+        },
+      });
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+contactsCmd
+  .command('remove')
+  .description('Remove a contact from the registry (exact name match)')
+  .requiredOption('-n, --name <name>', 'Full name of the contact to remove')
+  .action(async (options) => {
+    try {
+      const contact = removeContact(options.name);
+      outputResult({
+        status: 'removed',
+        contact: {
+          name: contact.name,
+          email: contact.email,
+          formatted: `${contact.name} <${contact.email}>`,
+        },
+      });
     } catch (error) {
       handleError(error);
     }

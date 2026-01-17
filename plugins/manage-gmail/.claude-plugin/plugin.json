@@ -10,6 +10,5 @@
     "manage",
     "gmail",
     "api"
-  ],
-  "commands": "./commands"
+  ]
 }

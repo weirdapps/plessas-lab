@@ -3,6 +3,8 @@ name: manage-youtube
 description: Search, discover, consume, and manage YouTube content using TypeScript CLI tools. Use when the user asks to search YouTube, get channel information, retrieve videos from a channel, get video transcripts, analyze YouTube content, manage favorite channels, organize saved videos with topics and thematics, or manage YouTube playlists (list, create, update, delete, add/remove videos). Works with channel handles (@username), URLs, or channel IDs. Includes both third-party API tools (no auth required) and official YouTube API tools (OAuth required for playlist management).
 ---
 
+> **Path Convention**: All paths in this document are relative to this skill's root directory. When executing commands, first `cd` to the skill directory or adjust paths accordingly.
+
 <objective>
 Enable Claude Code to interact with YouTube programmatically using prebuilt TypeScript CLI tools. This skill provides:
 
@@ -25,7 +27,7 @@ Enable Claude Code to interact with YouTube programmatically using prebuilt Type
 </objective>
 
 <context>
-**Tools location**: `~/.claude/skills/manage-youtube/tools/`
+**Tools location**: `./tools/`
 
 **Data storage**: `~/.google-skills/youtube/`
 - `favorite-channels.json` - Stored favorite channels list
@@ -38,18 +40,18 @@ Enable Claude Code to interact with YouTube programmatically using prebuilt Type
 
 **Setup for Content Discovery Tools** (no auth required):
 ```bash
-cd ~/.claude/skills/manage-youtube/tools
+cd ./tools
 npm install
 ```
 
 **Setup for Playlist Management Tools** (OAuth required):
 ```bash
 # Install dependencies
-cd ~/aiwork/TrainingMaterial/105\ -\ YouTube\ Content\ Monitoring\ using\ 3rd-APIs/playlist-tools
+cd ./tools/playlist-tools
 npm install
 
 # Authenticate with YouTube (opens browser)
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts login
+npx tsx ./tools/playlist-auth.ts login
 ```
 
 **Two Types of Tools:**
@@ -69,73 +71,73 @@ npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts login
 <quick_start>
 **Get channel information**:
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/channel-info.ts \
+npx tsx ./tools/channel-info.ts \
   --channel "@tachesteaches" --json
 ```
 
 **Get recent videos from a channel**:
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/channel-videos.ts \
+npx tsx ./tools/channel-videos.ts \
   --channel "@GoogleDevelopers" --limit 5 --json
 ```
 
 **Get recent videos from multiple channels**:
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/channel-videos.ts \
+npx tsx ./tools/channel-videos.ts \
   --channels "@GoogleDevelopers,@indydevdan,@matthew_berman" --limit 3 --json
 ```
 
 **Search YouTube**:
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/search.ts \
+npx tsx ./tools/search.ts \
   --query "typescript tutorial 2025" --limit 10 --json
 ```
 
 **Get video transcript**:
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/transcript.ts \
+npx tsx ./tools/transcript.ts \
   --video "dQw4w9WgXcQ" --text-only
 ```
 
 **Get video details**:
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/video-details.ts \
+npx tsx ./tools/video-details.ts \
   --video "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --json
 ```
 
 **Manage favorite channels**:
 ```bash
 # Add channels to favorites
-npx tsx ~/.claude/skills/manage-youtube/tools/favorites.ts \
+npx tsx ./tools/favorites.ts \
   --action add --channels "@GoogleDevelopers,@freeCodeCamp" --resolve
 
 # List favorites
-npx tsx ~/.claude/skills/manage-youtube/tools/favorites.ts --action list --json
+npx tsx ./tools/favorites.ts --action list --json
 ```
 
 **Manage YouTube playlists** (requires OAuth):
 ```bash
 # Authenticate first (one-time)
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts login
+npx tsx ./tools/playlist-auth.ts login
 
 # List all your playlists
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-manage.ts list --json
+npx tsx ./tools/playlist-manage.ts list --json
 
 # Create a new playlist
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-manage.ts create \
+npx tsx ./tools/playlist-manage.ts create \
   --title "My Learning Path" --privacy private
 
 # Add video to playlist
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-manage.ts \
+npx tsx ./tools/playlist-manage.ts \
   add-video PLxxxxxxxx dQw4w9WgXcQ
 
 # Sync all playlists locally
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-sync.ts all
+npx tsx ./tools/playlist-sync.ts all
 ```
 </quick_start>
 
 <prebuilt_tools>
-**Location**: `~/.claude/skills/manage-youtube/tools/`
+**Location**: `./tools/`
 
 ### Content Discovery Tools (No Authentication)
 
@@ -530,11 +532,11 @@ These tools use the official YouTube Data API v3 and require OAuth authenticatio
 **First-Time Setup:**
 ```bash
 # Install playlist-tools dependencies (one-time)
-cd ~/aiwork/TrainingMaterial/105\ -\ YouTube\ Content\ Monitoring\ using\ 3rd-APIs/playlist-tools
+cd ./tools/playlist-tools
 npm install
 
 # Authenticate with YouTube (opens browser)
-npx tsx playlist-auth.ts login
+npx tsx ./tools/playlist-auth.ts login
 ```
 
 **Authentication Operations:**

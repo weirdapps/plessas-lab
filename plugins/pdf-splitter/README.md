@@ -4,7 +4,7 @@ Split PDF files into individual pages as separate PDF or PNG files using TypeScr
 
 ## Overview
 
-node ~/.claude/skills/pdf-splitter/tools/dist/index.js <input.pdf>
+node ./tools/dist/index.js <input.pdf>
 
 ## Installation
 

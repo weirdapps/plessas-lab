@@ -4,7 +4,7 @@ Access and process Gmail messages using the Gmail API. Use when the user asks to
 
 ## Overview
 
-See SKILL.md for detailed documentation.
+node gmail-operations.js contacts search --name "john"
 
 ## Installation
 

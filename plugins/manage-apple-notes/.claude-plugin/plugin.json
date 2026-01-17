@@ -10,6 +10,5 @@
     "manage",
     "apple",
     "notes"
-  ],
-  "commands": "./commands"
+  ]
 }

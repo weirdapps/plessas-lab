@@ -1,6 +1,6 @@
 # Playlist Tools Reference
 
-**Location:** `~/aiwork/TrainingMaterial/105 - YouTube Content Monitoring using 3rd-APIs/playlist-tools/`
+**Location:** `./tools/playlist-tools/`
 
 ## Overview
 
@@ -65,7 +65,7 @@ Ensure you have OAuth credentials at `~/.google-skills/youtube/YouTubeSkill-Cred
 ### 2. Install Dependencies
 
 ```bash
-cd ~/aiwork/TrainingMaterial/105\ -\ YouTube\ Content\ Monitoring\ using\ 3rd-APIs/playlist-tools
+cd ./tools/playlist-tools
 npm install
 ```
 
@@ -276,7 +276,7 @@ import {
   isValidPlaylistId,
   isValidVideoId,
   extractVideoId,
-} from '~/aiwork/TrainingMaterial/105 - YouTube Content Monitoring using 3rd-APIs/playlist-tools/src/index.js';
+} from './tools/playlist-tools/src/index.js';
 ```
 
 ## Integration with Video Organization

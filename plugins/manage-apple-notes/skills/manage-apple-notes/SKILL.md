@@ -26,6 +26,7 @@ Tools to interact with Apple Notes. Notes are scoped to an automatically created
 2. **Read** a note to get its HTML content
 3. **Create** new notes with HTML-formatted body
 4. **Delete** notes by title (to edit: read → delete → create)
+5. **Attach** clipboard images to existing notes
 
 ## Usage
 
@@ -43,6 +44,12 @@ python scripts/read-note.py --title "My Note"
 
 # Delete note
 python scripts/delete-note.py --title "My Note"
+
+# Attach clipboard image to note
+python scripts/attach-clipboard-image.py --title "My Note"
+
+# Attach clipboard image with a label
+python scripts/attach-clipboard-image.py --title "My Note" --label "screenshot.png"
 ```
 
 > **Note:** The `--title` is automatically formatted as an `<h1>` header. Body content is piped via stdin using heredoc (`<< 'EOF'`) to avoid shell escaping issues.
@@ -75,5 +82,6 @@ python scripts/delete-note.py --title "My Note"
 - **Checklists** - Stored internally, checkbox state not accessible (renders as regular bullet list)
 - **Links** - Stripped on save
 - **Highlights** - Stored internally by Apple Notes
-- **Images** - Technically possible (base64) but impractical for LLM use
-- **Attachments** - Cannot be added programmatically
+- **Images via base64** - Technically possible but impractical; use clipboard attachment instead
+- **Clipboard Images** - ✅ Supported via `attach-clipboard-image.py` (copies image from clipboard to note)
+- **File Attachments** - Only images from clipboard are supported; other file types cannot be added programmatically
