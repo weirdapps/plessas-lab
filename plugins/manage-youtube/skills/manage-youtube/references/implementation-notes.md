@@ -2,7 +2,7 @@
 
 **Version:** 1.2
 **Date:** January 1, 2026
-**Reference Implementation:** `/Users/giorgosmarinos/aiwork/TrainingMaterial/105 - YouTube Content Monitoring using 3rd-APIs/`
+**Skill Location:** `./`
 
 ---
 
@@ -122,7 +122,7 @@ Not all videos have captions available. The transcript tool will fail with an er
 
 ## Caching Strategy
 
-The reference implementation uses in-memory caching:
+The underlying youtubei.js library uses in-memory caching:
 
 | Cache Type | TTL | Purpose |
 |------------|-----|---------|

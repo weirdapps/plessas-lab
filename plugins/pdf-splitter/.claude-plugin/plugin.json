@@ -11,6 +11,5 @@
     "splitter",
     "typescript",
     "image"
-  ],
-  "commands": "./commands"
+  ]
 }

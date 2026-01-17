@@ -3,13 +3,15 @@ name: pdf-splitter
 description: Split PDF files into individual pages as separate PDF or PNG files using TypeScript. Use when the user needs to extract pages from a PDF, convert PDF pages to images, or split a multi-page PDF into single-page files.
 ---
 
+> **Path Convention**: All paths in this document are relative to this skill's root directory. When executing commands, first `cd` to the skill directory or adjust paths accordingly.
+
 <objective>
 Split PDF documents into individual pages, outputting either separate PDF files or PNG images. Uses pure JavaScript libraries (pdf-lib for PDF manipulation, pdf-to-img for PNG conversion) with no external system dependencies.
 </objective>
 
 <tool_location>
 The pdf-splitter tool is bundled with this skill at:
-`~/.claude/skills/pdf-splitter/tools/`
+`./tools/`
 
 The tool is pre-built and ready to use. No project setup required.
 </tool_location>
@@ -19,14 +21,14 @@ To split a PDF file, run the tool from the skill folder:
 
 ```bash
 # Split PDF to individual PDF pages (default)
-node ~/.claude/skills/pdf-splitter/tools/dist/index.js <input.pdf>
+node ./tools/dist/index.js <input.pdf>
 
 # Split PDF to PNG images
-node ~/.claude/skills/pdf-splitter/tools/dist/index.js -f png <input.pdf>
+node ./tools/dist/index.js -f png <input.pdf>
 
 # Alternative: use the shell wrapper
-~/.claude/skills/pdf-splitter/scripts/pdf-splitter.sh <input.pdf>
-~/.claude/skills/pdf-splitter/scripts/pdf-splitter.sh -f png <input.pdf>
+./scripts/pdf-splitter.sh <input.pdf>
+./scripts/pdf-splitter.sh -f png <input.pdf>
 ```
 
 **Options:**
@@ -37,10 +39,10 @@ node ~/.claude/skills/pdf-splitter/tools/dist/index.js -f png <input.pdf>
 **Examples:**
 ```bash
 # Extract pages as PDFs
-node ~/.claude/skills/pdf-splitter/tools/dist/index.js document.pdf
+node ./tools/dist/index.js document.pdf
 
 # Extract pages as PNG images
-node ~/.claude/skills/pdf-splitter/tools/dist/index.js -f png document.pdf
+node ./tools/dist/index.js -f png document.pdf
 ```
 </usage>
 
@@ -60,7 +62,7 @@ Output files are created in the current working directory.
 If the tool needs to be rebuilt after modifications:
 
 ```bash
-cd ~/.claude/skills/pdf-splitter/tools
+cd ./tools
 npm install   # Only if node_modules is missing
 npm run build
 ```
@@ -68,7 +70,7 @@ npm run build
 
 <project_structure>
 ```
-~/.claude/skills/pdf-splitter/
+./
 ├── tools/
 │   ├── src/
 │   │   ├── index.ts              # CLI entry point

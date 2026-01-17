@@ -100,7 +100,7 @@ When you need different scopes than what the current token has:
 
 3. Rebuild the TypeScript code:
    ```bash
-   cd ~/.claude/skills/access-gmail/scripts && npm run build
+   cd ./scripts && npm run build
    ```
 
 4. Re-run the application to trigger new OAuth flow

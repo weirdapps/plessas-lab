@@ -3,6 +3,8 @@ name: manage-google-workspace
 description: Manage Google Workspace files, folders, and documents using TypeScript CLI tools. Full support for Google Drive (list, search, upload, download, organize), Google Docs (create, read, edit, search), Google Sheets (CRUD, queries, multi-range operations), and Google Slides (presentations, slides, text). Manage sharing permissions. Use when user needs to interact with Google Drive or any Google Workspace document types.
 ---
 
+> **Path Convention**: All paths in this document are relative to this skill's root directory. When executing commands, first `cd` to the skill directory or adjust paths accordingly.
+
 <objective>
 Enable Claude Code to interact with Google Workspace using prebuilt TypeScript CLI tools. This skill provides comprehensive management of Google Drive files/folders, Google Docs documents, Google Sheets spreadsheets, and Google Slides presentations using the Google Workspace APIs.
 </objective>
@@ -14,7 +16,7 @@ Enable Claude Code to interact with Google Workspace using prebuilt TypeScript C
 
 **Setup**: Install dependencies once:
 ```bash
-cd ~/.claude/skills/manage-google-workspace/tools
+cd ./tools
 npm install
 ```
 
@@ -30,52 +32,52 @@ npm install
 <quick_start>
 **List recent files**:
 ```bash
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-list-files.ts \
+npx tsx ./tools/drive-list-files.ts \
   --limit 10 --order-by "modifiedTime desc"
 ```
 
 **Search for files**:
 ```bash
 # By name
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-search.ts \
+npx tsx ./tools/drive-search.ts \
   --name "report" --type all
 
 # Find Google Docs
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-search.ts \
+npx tsx ./tools/drive-search.ts \
   --type docs --name "meeting"
 
 # Recent files
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-search.ts \
+npx tsx ./tools/drive-search.ts \
   --recent 7
 ```
 
 **Download a file**:
 ```bash
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-download.ts \
+npx tsx ./tools/drive-download.ts \
   --id "abc123" --output /tmp/myfile.pdf
 ```
 
 **Export Google Doc as PDF**:
 ```bash
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-export.ts \
+npx tsx ./tools/drive-export.ts \
   --id "abc123" --format pdf --output /tmp/document.pdf
 ```
 
 **Upload a file**:
 ```bash
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-upload.ts \
+npx tsx ./tools/drive-upload.ts \
   --file /path/to/file.pdf --name "My Document.pdf"
 ```
 
 **Read spreadsheet values**:
 ```bash
-npx tsx ~/.claude/skills/manage-google-workspace/tools/sheets-manage.ts \
+npx tsx ./tools/sheets-manage.ts \
   --action read --id "spreadsheet_id" --range "Sheet1!A1:D10"
 ```
 </quick_start>
 
 <prebuilt_tools>
-**Location**: `~/.claude/skills/manage-google-workspace/tools/`
+**Location**: `./tools/`
 
 | Tool | Purpose |
 |------|---------|
@@ -92,7 +94,7 @@ npx tsx ~/.claude/skills/manage-google-workspace/tools/sheets-manage.ts \
 | `drive-permissions.ts` | Manage sharing permissions |
 | `docs-manage.ts` | Google Docs: full CRUD, search, structure analysis, headings |
 | `sheets-manage.ts` | Google Sheets: full CRUD, search, query, multi-range, sheet management |
-| `slides-manage.ts` | Google Slides: full CRUD, slide management, text boxes, replace text |
+| `slides-manage.ts` | Google Slides: full CRUD, slide management, text boxes, images, backgrounds, replace text |
 | `google-drive-client.ts` | Shared client library (not a CLI tool) |
 
 All tools:
@@ -406,7 +408,7 @@ npx tsx sheets-manage.ts --action delete-sheet --id "id" --sheet-id 123456789
 </sheets_operations>
 
 <slides_operations>
-**Available actions**: create, create-with-slides, get, summary, count, text, text-slide, add-slide, delete-slide, add-textbox, replace
+**Available actions**: create, create-with-slides, get, summary, count, text, text-slide, add-slide, delete-slide, add-textbox, add-image, set-background, set-background-color, remove-empty-placeholders, remove-all-empty-placeholders, replace, get-notes, set-notes, list-elements, clear-textboxes, delete-elements
 
 **Create presentations**:
 ```bash
@@ -452,9 +454,66 @@ npx tsx slides-manage.ts --action delete-slide --id "presentation_id" --slide-nu
 npx tsx slides-manage.ts --action add-textbox --id "presentation_id" \
   --slide-number 1 --text "Hello World" --x 100 --y 100 --width 300 --height 50
 
+# Add an image to a slide (from Drive or URL)
+npx tsx slides-manage.ts --action add-image --id "presentation_id" \
+  --slide-number 1 --drive-id "file_id" --x 100 --y 100 --width 400 --height 300
+
 # Replace text across the presentation
 npx tsx slides-manage.ts --action replace --id "presentation_id" \
   --find "old text" --replace-with "new text"
+```
+
+**Slide backgrounds** (proper API method - uses pageBackgroundFill):
+```bash
+# Set slide background to an image from Google Drive
+npx tsx slides-manage.ts --action set-background --id "presentation_id" \
+  --slide-number 1 --drive-id "image_file_id"
+
+# Set slide background to an image from URL
+npx tsx slides-manage.ts --action set-background --id "presentation_id" \
+  --slide-number 1 --image-url "https://example.com/image.png"
+
+# Set slide background to a solid color (hex format)
+npx tsx slides-manage.ts --action set-background-color --id "presentation_id" \
+  --slide-number 1 --color "#007b85"
+```
+
+**Remove empty placeholders** (clean up unused placeholder elements):
+```bash
+# Remove empty placeholders from a specific slide
+npx tsx slides-manage.ts --action remove-empty-placeholders \
+  --id "presentation_id" --slide-number 1
+
+# Remove empty placeholders from ALL slides in the presentation
+npx tsx slides-manage.ts --action remove-all-empty-placeholders \
+  --id "presentation_id"
+```
+
+**Speaker notes**:
+```bash
+# Get speaker notes from a slide
+npx tsx slides-manage.ts --action get-notes --id "presentation_id" --slide-number 3
+
+# Set speaker notes for a slide
+npx tsx slides-manage.ts --action set-notes --id "presentation_id" \
+  --slide-number 3 --notes "These are the speaker notes for this slide"
+
+# Alternative: use --text instead of --notes
+npx tsx slides-manage.ts --action set-notes --id "presentation_id" \
+  --slide-number 3 --text "Speaker notes text"
+```
+
+**Slide elements management**:
+```bash
+# List all page elements on a slide (shows type, ID, and text content)
+npx tsx slides-manage.ts --action list-elements --id "presentation_id" --slide-number 1
+
+# Clear all text boxes from a slide (keeps background, images, etc.)
+npx tsx slides-manage.ts --action clear-textboxes --id "presentation_id" --slide-number 1
+
+# Delete specific elements by their IDs (comma-separated)
+npx tsx slides-manage.ts --action delete-elements --id "presentation_id" \
+  --element-ids "element_id_1,element_id_2,element_id_3"
 ```
 
 **Slide layouts**: BLANK, TITLE, TITLE_AND_BODY, TITLE_ONLY, SECTION_HEADER, CAPTION_ONLY, TITLE_AND_TWO_COLUMNS, SECTION_TITLE_AND_DESCRIPTION, ONE_COLUMN_TEXT, MAIN_POINT, BIG_NUMBER

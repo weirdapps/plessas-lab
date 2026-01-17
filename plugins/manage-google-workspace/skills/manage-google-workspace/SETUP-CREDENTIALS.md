@@ -7,7 +7,7 @@ This document explains how to set up the OAuth credentials for the Google Worksp
 The skill comes with a pre-configured OAuth credentials file in the `skill-key` folder:
 
 ```
-~/.claude/skills/manage-google-workspace/skill-key/DriveSkill-Credentials.json
+./skill-key/DriveSkill-Credentials.json
 ```
 
 ## Setup Steps
@@ -25,7 +25,7 @@ mkdir -p ~/.google-skills/drive
 Copy the credentials file from the skill-key folder to the expected runtime location:
 
 ```bash
-cp ~/.claude/skills/manage-google-workspace/skill-key/DriveSkill-Credentials.json ~/.google-skills/drive/
+cp ./skill-key/DriveSkill-Credentials.json ~/.google-skills/drive/
 ```
 
 ### Step 3: Verify the File is in Place
@@ -41,7 +41,7 @@ ls -la ~/.google-skills/drive/DriveSkill-Credentials.json
 Navigate to the tools directory and install the required npm packages:
 
 ```bash
-cd ~/.claude/skills/manage-google-workspace/tools
+cd ./tools
 npm install
 ```
 

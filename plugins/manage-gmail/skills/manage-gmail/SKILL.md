@@ -3,6 +3,8 @@ name: manage-gmail
 description: Access and process Gmail messages using the Gmail API. Use when the user asks to read, search, list, send, reply to, or forward emails. Supports OAuth 2.0 authentication with stored credentials.
 ---
 
+> **Path Convention**: All paths in this document are relative to this skill's root directory. When executing commands, first `cd` to the skill directory or adjust paths accordingly.
+
 <objective>
 Enable Claude Code to access and process Gmail messages using the Gmail API. This skill provides functions to authenticate, list messages, read message content, send new emails with file attachments, reply to messages, forward messages, and manage drafts.
 </objective>
@@ -15,6 +17,14 @@ Token file (generated after first authentication): `~/.google-skills/gmail/gmail
 
 **First-time authentication**: Running any Gmail operation for the first time will open a browser window for OAuth consent. The user must grant permission to access their Gmail account.
 </credentials>
+
+<contacts_registry>
+**Contacts Registry**: `~/.google-skills/gmail/contacts-registry.json`
+
+A JSON-based registry for storing email contacts. Allows looking up email addresses by name using case-insensitive partial matching.
+
+The registry stores contacts with their full name and email address. When searching, typing "john" will match "John Smith", "Johnny Doe", etc.
+</contacts_registry>
 
 <scopes>
 Available Gmail API scopes (configured in credentials):
@@ -33,43 +43,58 @@ Available Gmail API scopes (configured in credentials):
 <quick_start>
 <workflow>
 1. **Verify credentials exist**: Check `~/.google-skills/gmail/GMailSkill-Credentials.json`
-2. **Run the appropriate command** using the CLI at `~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js`
+2. **Run the appropriate command** using the CLI at `./scripts/dist/gmail-operations.js`
 3. **Handle first-time auth**: Browser window opens for OAuth consent
 4. **Process results**: Commands return JSON output for parsing
 </workflow>
 
 <common_operations>
-**CLI Tool Location**: `~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js`
+**CLI Tool Location**: `./scripts/dist/gmail-operations.js`
 **Node.js Interpreter**: Use the system Node.js (v18+ required)
 
 **List recent messages:**
 ```bash
-node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js list --max-results 10
+node ./scripts/dist/gmail-operations.js list --max-results 10
 ```
 
 **Search messages:**
 ```bash
-node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js search --query "is:unread newer_than:7d"
+node ./scripts/dist/gmail-operations.js search --query "is:unread newer_than:7d"
 ```
 
 **Read a specific message:**
 ```bash
-node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js read --message-id "MESSAGE_ID_HERE"
+node ./scripts/dist/gmail-operations.js read --message-id "MESSAGE_ID_HERE"
 ```
 
 **Read a thread:**
 ```bash
-node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js thread --thread-id "THREAD_ID_HERE"
+node ./scripts/dist/gmail-operations.js thread --thread-id "THREAD_ID_HERE"
 ```
 
 **Send an email:**
 ```bash
-node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js send --to "recipient@example.com" --subject "Subject" --body "Message body"
+node ./scripts/dist/gmail-operations.js send --to "recipient@example.com" --subject "Subject" --body "Message body"
 ```
 
 **Get profile:**
 ```bash
-node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js profile
+node ./scripts/dist/gmail-operations.js profile
+```
+
+**List contacts:**
+```bash
+node ./scripts/dist/gmail-operations.js contacts list
+```
+
+**Search contacts by name:**
+```bash
+node ./scripts/dist/gmail-operations.js contacts search --name "john"
+```
+
+**Add a contact:**
+```bash
+node ./scripts/dist/gmail-operations.js contacts add --name "John Smith" --email "john@example.com"
 ```
 </common_operations>
 </quick_start>
@@ -303,7 +328,7 @@ node gmail-operations.js trash-bulk --message-ids "ID1,ID2,ID3,ID4"
 
 **Example:**
 ```bash
-node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js trash-bulk --message-ids "19b68a0697430e5f,19b687ddaf35bf2f,19b68711bef8edad"
+node ./scripts/dist/gmail-operations.js trash-bulk --message-ids "19b68a0697430e5f,19b687ddaf35bf2f,19b68711bef8edad"
 ```
 
 **Notes:**
@@ -313,6 +338,103 @@ node ~/.claude/skills/manage-gmail/scripts/dist/gmail-operations.js trash-bulk -
 
 **Requires**: `gmail.modify` scope
 </trash_bulk>
+
+<contacts_list>
+**Purpose**: List all contacts in the registry
+
+**Command:**
+```bash
+node gmail-operations.js contacts list
+```
+
+**Output**: JSON object with count and array of contacts, each with name, email, and formatted display
+</contacts_list>
+
+<contacts_search>
+**Purpose**: Search contacts by name using case-insensitive partial matching
+
+**Command:**
+```bash
+node gmail-operations.js contacts search --name QUERY
+```
+
+**Parameters:**
+- `--name`, `-n`: Search query to match against contact names (required)
+
+**Output**: JSON object with query, count, and matching contacts array
+
+**Examples:**
+```bash
+# Find all contacts with "john" in their name
+node gmail-operations.js contacts search --name "john"
+
+# Case-insensitive search
+node gmail-operations.js contacts search --name "SMITH"
+```
+</contacts_search>
+
+<contacts_add>
+**Purpose**: Add a new contact to the registry
+
+**Command:**
+```bash
+node gmail-operations.js contacts add --name NAME --email EMAIL
+```
+
+**Parameters:**
+- `--name`, `-n`: Full name of the contact (required)
+- `--email`, `-e`: Email address (required, must be valid format)
+
+**Output**: JSON object with status and added contact details
+
+**Notes:**
+- Duplicate names are not allowed (case-insensitive)
+- Email format is validated before adding
+
+**Example:**
+```bash
+node gmail-operations.js contacts add --name "John Smith" --email "john.smith@example.com"
+```
+</contacts_add>
+
+<contacts_update>
+**Purpose**: Update an existing contact's email address
+
+**Command:**
+```bash
+node gmail-operations.js contacts update --name NAME --email EMAIL
+```
+
+**Parameters:**
+- `--name`, `-n`: Full name of the contact to update (exact match, case-insensitive)
+- `--email`, `-e`: New email address (required)
+
+**Output**: JSON object with status and updated contact details
+
+**Example:**
+```bash
+node gmail-operations.js contacts update --name "John Smith" --email "john.new@example.com"
+```
+</contacts_update>
+
+<contacts_remove>
+**Purpose**: Remove a contact from the registry
+
+**Command:**
+```bash
+node gmail-operations.js contacts remove --name NAME
+```
+
+**Parameters:**
+- `--name`, `-n`: Full name of the contact to remove (exact match, case-insensitive)
+
+**Output**: JSON object with status and removed contact details
+
+**Example:**
+```bash
+node gmail-operations.js contacts remove --name "John Smith"
+```
+</contacts_remove>
 </operations>
 
 <attachments>

@@ -18,7 +18,17 @@
  *   add-slide        - Add a new slide
  *   delete-slide     - Delete a slide by number
  *   add-textbox      - Add a text box to a slide
+ *   add-image        - Add an image to a slide
+ *   set-background   - Set slide background to an image
+ *   set-background-color - Set slide background to a solid color
+ *   remove-empty-placeholders - Remove empty placeholders from a slide
+ *   remove-all-empty-placeholders - Remove empty placeholders from all slides
  *   replace          - Replace text across the presentation
+ *   get-notes        - Get speaker notes from a slide
+ *   set-notes        - Set speaker notes for a slide
+ *   list-elements    - List all page elements on a slide
+ *   clear-textboxes  - Clear all text boxes from a slide
+ *   delete-elements  - Delete specific elements by ID
  *
  * Options:
  *   --action, -a      Action to perform (required)
@@ -28,13 +38,18 @@
  *   --slide-number    Slide number 1-based (for text-slide/delete-slide/add-textbox)
  *   --layout          Slide layout (for add-slide/create-with-slides)
  *   --index           Insertion index (for add-slide)
- *   --text            Text content (for add-textbox)
+ *   --text            Text content (for add-textbox/set-notes)
+ *   --notes           Notes text (for set-notes)
  *   --find            Text to find (for replace)
  *   --replace-with    Replacement text (for replace)
  *   --x               X position in points (for add-textbox)
  *   --y               Y position in points (for add-textbox)
  *   --width           Width in points (for add-textbox)
  *   --height          Height in points (for add-textbox)
+ *   --image-url       Image URL (for add-image/set-background)
+ *   --drive-id        Google Drive file ID (for add-image/set-background)
+ *   --color           Hex color (for set-background-color)
+ *   --element-ids     Comma-separated element IDs (for delete-elements)
  *   --json            Output as JSON
  *
  * Layouts: BLANK, TITLE, TITLE_AND_BODY, TITLE_ONLY, SECTION_HEADER, etc.
@@ -62,7 +77,16 @@ type Action =
   | 'delete-slide'
   | 'add-textbox'
   | 'add-image'
-  | 'replace';
+  | 'set-background'
+  | 'set-background-color'
+  | 'remove-empty-placeholders'
+  | 'remove-all-empty-placeholders'
+  | 'replace'
+  | 'get-notes'
+  | 'set-notes'
+  | 'list-elements'
+  | 'clear-textboxes'
+  | 'delete-elements';
 
 const VALID_ACTIONS: Action[] = [
   'create',
@@ -76,7 +100,16 @@ const VALID_ACTIONS: Action[] = [
   'delete-slide',
   'add-textbox',
   'add-image',
+  'set-background',
+  'set-background-color',
+  'remove-empty-placeholders',
+  'remove-all-empty-placeholders',
   'replace',
+  'get-notes',
+  'set-notes',
+  'list-elements',
+  'clear-textboxes',
+  'delete-elements',
 ];
 
 const VALID_LAYOUTS: PredefinedLayout[] = [
@@ -113,6 +146,8 @@ async function main(): Promise<void> {
   const heightStr = args.height;
   const imageUrl = args['image-url'] || args.url;
   const driveId = args['drive-id'];
+  const elementIds = args['element-ids'];
+  const notesText = args.notes;
   const jsonOutput = args.json === 'true';
 
   if (!action) {
@@ -470,6 +505,157 @@ async function main(): Promise<void> {
         break;
       }
 
+      case 'set-background': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for set-background action');
+          process.exit(1);
+        }
+        if (!slideNumberStr) {
+          console.error('[ERROR] --slide-number is required for set-background action');
+          process.exit(1);
+        }
+
+        // Determine image URL
+        let bgImageUrl = imageUrl;
+        if (driveId) {
+          bgImageUrl = `https://drive.google.com/uc?export=view&id=${driveId}`;
+        }
+        if (!bgImageUrl) {
+          console.error('[ERROR] Either --image-url or --drive-id is required for set-background action');
+          process.exit(1);
+        }
+
+        const bgSlideNumber = parseInt(slideNumberStr);
+        if (isNaN(bgSlideNumber) || bgSlideNumber < 1) {
+          console.error('[ERROR] --slide-number must be a positive number');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log(`[...] Setting background for slide ${bgSlideNumber}...`);
+        await client.setSlideBackgroundByNumber(presentationId, bgSlideNumber, bgImageUrl);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ success: true, slideNumber: bgSlideNumber }));
+        } else {
+          printSeparator('-');
+          console.log('[OK] Background set');
+          console.log(`  Slide: ${bgSlideNumber}`);
+          console.log(`  Image: ${bgImageUrl.substring(0, 60)}${bgImageUrl.length > 60 ? '...' : ''}`);
+        }
+        break;
+      }
+
+      case 'set-background-color': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for set-background-color action');
+          process.exit(1);
+        }
+        if (!slideNumberStr) {
+          console.error('[ERROR] --slide-number is required for set-background-color action');
+          process.exit(1);
+        }
+
+        const colorStr = args.color;
+        if (!colorStr) {
+          console.error('[ERROR] --color is required for set-background-color action (hex format: #RRGGBB)');
+          process.exit(1);
+        }
+
+        // Parse hex color
+        const hexMatch = colorStr.match(/^#?([0-9A-Fa-f]{6})$/);
+        if (!hexMatch) {
+          console.error('[ERROR] --color must be in hex format: #RRGGBB (e.g., #007b85)');
+          process.exit(1);
+        }
+
+        const hex = hexMatch[1];
+        const rgbColor = {
+          red: parseInt(hex.substring(0, 2), 16) / 255,
+          green: parseInt(hex.substring(2, 4), 16) / 255,
+          blue: parseInt(hex.substring(4, 6), 16) / 255,
+        };
+
+        const colorSlideNumber = parseInt(slideNumberStr);
+        if (isNaN(colorSlideNumber) || colorSlideNumber < 1) {
+          console.error('[ERROR] --slide-number must be a positive number');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log(`[...] Setting background color for slide ${colorSlideNumber}...`);
+        await client.setSlideBackgroundColorByNumber(presentationId, colorSlideNumber, rgbColor);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ success: true, slideNumber: colorSlideNumber, color: colorStr }));
+        } else {
+          printSeparator('-');
+          console.log('[OK] Background color set');
+          console.log(`  Slide: ${colorSlideNumber}`);
+          console.log(`  Color: ${colorStr}`);
+        }
+        break;
+      }
+
+      case 'remove-empty-placeholders': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for remove-empty-placeholders action');
+          process.exit(1);
+        }
+        if (!slideNumberStr) {
+          console.error('[ERROR] --slide-number is required for remove-empty-placeholders action');
+          process.exit(1);
+        }
+
+        const placeholderSlideNumber = parseInt(slideNumberStr);
+        if (isNaN(placeholderSlideNumber) || placeholderSlideNumber < 1) {
+          console.error('[ERROR] --slide-number must be a positive number');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log(`[...] Removing empty placeholders from slide ${placeholderSlideNumber}...`);
+        const removeResult = await client.removeEmptyPlaceholdersByNumber(presentationId, placeholderSlideNumber);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ success: true, slideNumber: placeholderSlideNumber, ...removeResult }));
+        } else {
+          printSeparator('-');
+          if (removeResult.removedCount === 0) {
+            console.log('[OK] No empty placeholders found');
+            console.log(`  Slide: ${placeholderSlideNumber}`);
+          } else {
+            console.log('[OK] Empty placeholders removed');
+            console.log(`  Slide: ${placeholderSlideNumber}`);
+            console.log(`  Removed: ${removeResult.removedCount} placeholder(s)`);
+          }
+        }
+        break;
+      }
+
+      case 'remove-all-empty-placeholders': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for remove-all-empty-placeholders action');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log('[...] Removing empty placeholders from all slides...');
+        const removeAllResult = await client.removeAllEmptyPlaceholders(presentationId);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ success: true, ...removeAllResult }));
+        } else {
+          printSeparator('-');
+          if (removeAllResult.totalRemoved === 0) {
+            console.log('[OK] No empty placeholders found in any slide');
+          } else {
+            console.log('[OK] Empty placeholders removed');
+            console.log(`  Total removed: ${removeAllResult.totalRemoved}`);
+            for (const detail of removeAllResult.slideDetails) {
+              console.log(`    Slide ${detail.slideNumber}: ${detail.removedCount} placeholder(s)`);
+            }
+          }
+        }
+        break;
+      }
+
       case 'replace': {
         if (!presentationId) {
           console.error('[ERROR] --id is required for replace action');
@@ -493,6 +679,174 @@ async function main(): Promise<void> {
           printSeparator('-');
           console.log('[OK] Text replaced');
           console.log(`  Occurrences replaced: ${count}`);
+        }
+        break;
+      }
+
+      case 'get-notes': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for get-notes action');
+          process.exit(1);
+        }
+        if (!slideNumberStr) {
+          console.error('[ERROR] --slide-number is required for get-notes action');
+          process.exit(1);
+        }
+
+        const slideNumber = parseInt(slideNumberStr);
+        if (isNaN(slideNumber) || slideNumber < 1) {
+          console.error('[ERROR] --slide-number must be a positive number');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log(`[...] Getting speaker notes from slide ${slideNumber}...`);
+        const notes = await client.getSpeakerNotes(presentationId, slideNumber);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ slideNumber, notes }));
+        } else {
+          printSeparator('-');
+          console.log(`[OK] Speaker notes from slide ${slideNumber}`);
+          printSeparator('-');
+          console.log(notes || '(no notes)');
+        }
+        break;
+      }
+
+      case 'set-notes': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for set-notes action');
+          process.exit(1);
+        }
+        if (!slideNumberStr) {
+          console.error('[ERROR] --slide-number is required for set-notes action');
+          process.exit(1);
+        }
+        if (!notesText && !text) {
+          console.error('[ERROR] --notes or --text is required for set-notes action');
+          process.exit(1);
+        }
+
+        const slideNumber = parseInt(slideNumberStr);
+        if (isNaN(slideNumber) || slideNumber < 1) {
+          console.error('[ERROR] --slide-number must be a positive number');
+          process.exit(1);
+        }
+
+        const finalNotesText = notesText || text || '';
+
+        if (!jsonOutput) console.log(`[...] Setting speaker notes for slide ${slideNumber}...`);
+        await client.setSpeakerNotes(presentationId, slideNumber, finalNotesText);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ success: true, slideNumber }));
+        } else {
+          printSeparator('-');
+          console.log('[OK] Speaker notes set');
+          console.log(`  Slide: ${slideNumber}`);
+          console.log(`  Notes: ${finalNotesText.substring(0, 50)}${finalNotesText.length > 50 ? '...' : ''}`);
+        }
+        break;
+      }
+
+      case 'list-elements': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for list-elements action');
+          process.exit(1);
+        }
+        if (!slideNumberStr) {
+          console.error('[ERROR] --slide-number is required for list-elements action');
+          process.exit(1);
+        }
+
+        const slideNumber = parseInt(slideNumberStr);
+        if (isNaN(slideNumber) || slideNumber < 1) {
+          console.error('[ERROR] --slide-number must be a positive number');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log(`[...] Listing elements on slide ${slideNumber}...`);
+        const elements = await client.getSlideElements(presentationId, slideNumber);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ slideNumber, elements }, null, 2));
+        } else {
+          printSeparator('-');
+          console.log(`[OK] Elements on slide ${slideNumber}`);
+          console.log(`  Total: ${elements.length} element(s)`);
+          printSeparator('-');
+          for (const elem of elements) {
+            const textPreview = elem.text ? ` - "${elem.text.substring(0, 40)}${elem.text.length > 40 ? '...' : ''}"` : '';
+            console.log(`  [${elem.type}] ${elem.objectId}${textPreview}`);
+          }
+        }
+        break;
+      }
+
+      case 'clear-textboxes': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for clear-textboxes action');
+          process.exit(1);
+        }
+        if (!slideNumberStr) {
+          console.error('[ERROR] --slide-number is required for clear-textboxes action');
+          process.exit(1);
+        }
+
+        const slideNumber = parseInt(slideNumberStr);
+        if (isNaN(slideNumber) || slideNumber < 1) {
+          console.error('[ERROR] --slide-number must be a positive number');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log(`[...] Clearing text boxes from slide ${slideNumber}...`);
+        const clearResult = await client.clearSlideTextBoxes(presentationId, slideNumber);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ success: true, slideNumber, ...clearResult }));
+        } else {
+          printSeparator('-');
+          if (clearResult.deletedCount === 0) {
+            console.log('[OK] No text boxes found on slide');
+            console.log(`  Slide: ${slideNumber}`);
+          } else {
+            console.log('[OK] Text boxes cleared');
+            console.log(`  Slide: ${slideNumber}`);
+            console.log(`  Deleted: ${clearResult.deletedCount} text box(es)`);
+          }
+        }
+        break;
+      }
+
+      case 'delete-elements': {
+        if (!presentationId) {
+          console.error('[ERROR] --id is required for delete-elements action');
+          process.exit(1);
+        }
+        if (!elementIds) {
+          console.error('[ERROR] --element-ids is required for delete-elements action (comma-separated list)');
+          process.exit(1);
+        }
+
+        const idsToDelete = elementIds.split(',').map((id: string) => id.trim()).filter((id: string) => id);
+
+        if (idsToDelete.length === 0) {
+          console.error('[ERROR] No valid element IDs provided');
+          process.exit(1);
+        }
+
+        if (!jsonOutput) console.log(`[...] Deleting ${idsToDelete.length} element(s)...`);
+        await client.deletePageElements(presentationId, idsToDelete);
+
+        if (jsonOutput) {
+          console.log(JSON.stringify({ success: true, deletedCount: idsToDelete.length, deletedIds: idsToDelete }));
+        } else {
+          printSeparator('-');
+          console.log('[OK] Elements deleted');
+          console.log(`  Count: ${idsToDelete.length}`);
+          for (const id of idsToDelete) {
+            console.log(`    - ${id}`);
+          }
         }
         break;
       }
@@ -524,7 +878,16 @@ function printUsage(): void {
   console.error('  delete-slide     Delete a slide by number');
   console.error('  add-textbox      Add a text box to a slide');
   console.error('  add-image        Add an image to a slide');
+  console.error('  set-background   Set slide background to an image (proper API method)');
+  console.error('  set-background-color Set slide background to a solid color');
+  console.error('  remove-empty-placeholders      Remove empty placeholders from a slide');
+  console.error('  remove-all-empty-placeholders  Remove empty placeholders from all slides');
   console.error('  replace          Replace text across the presentation');
+  console.error('  get-notes        Get speaker notes from a slide');
+  console.error('  set-notes        Set speaker notes for a slide');
+  console.error('  list-elements    List all page elements on a slide');
+  console.error('  clear-textboxes  Clear all text boxes from a slide');
+  console.error('  delete-elements  Delete specific elements by ID');
   console.error('\nExamples:');
   console.error('  Create:       --action create --title "My Presentation"');
   console.error('  With slides:  --action create-with-slides --title "Report" --slide-count 5 --layout TITLE_AND_BODY');
@@ -538,7 +901,17 @@ function printUsage(): void {
   console.error('  Add textbox:  --action add-textbox --id "presentation_id" --slide-number 1 --text "Hello" --x 100 --y 100');
   console.error('  Add image:    --action add-image --id "presentation_id" --slide-number 1 --drive-id "file_id"');
   console.error('  Add img URL:  --action add-image --id "presentation_id" --slide-number 1 --image-url "https://..."');
+  console.error('  Set bg img:   --action set-background --id "presentation_id" --slide-number 1 --drive-id "file_id"');
+  console.error('  Set bg URL:   --action set-background --id "presentation_id" --slide-number 1 --image-url "https://..."');
+  console.error('  Set bg color: --action set-background-color --id "presentation_id" --slide-number 1 --color "#007b85"');
+  console.error('  Clean slide:  --action remove-empty-placeholders --id "presentation_id" --slide-number 1');
+  console.error('  Clean all:    --action remove-all-empty-placeholders --id "presentation_id"');
   console.error('  Replace:      --action replace --id "presentation_id" --find "old" --replace-with "new"');
+  console.error('  Get notes:    --action get-notes --id "presentation_id" --slide-number 3');
+  console.error('  Set notes:    --action set-notes --id "presentation_id" --slide-number 3 --notes "Speaker notes text"');
+  console.error('  List elems:   --action list-elements --id "presentation_id" --slide-number 1');
+  console.error('  Clear boxes:  --action clear-textboxes --id "presentation_id" --slide-number 1');
+  console.error('  Delete elems: --action delete-elements --id "presentation_id" --element-ids "id1,id2,id3"');
   console.error('\nValid layouts: BLANK, TITLE, TITLE_AND_BODY, TITLE_ONLY, SECTION_HEADER, CAPTION_ONLY,');
   console.error('               TITLE_AND_TWO_COLUMNS, SECTION_TITLE_AND_DESCRIPTION, ONE_COLUMN_TEXT,');
   console.error('               MAIN_POINT, BIG_NUMBER');

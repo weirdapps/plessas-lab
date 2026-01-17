@@ -4,7 +4,7 @@ Manage Google Workspace files, folders, and documents using TypeScript CLI tools
 
 ## Overview
 
-npx tsx ~/.claude/skills/manage-google-workspace/tools/drive-search.ts \
+npx tsx ./tools/drive-search.ts \
   --name "report" --type all
 
 ## Installation

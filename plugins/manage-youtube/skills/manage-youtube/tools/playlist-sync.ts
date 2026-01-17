@@ -4,11 +4,13 @@
 
 import { spawn } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const PLAYLIST_TOOLS_PATH = path.join(
-  process.env.HOME || '~',
-  'aiwork/TrainingMaterial/105 - YouTube Content Monitoring using 3rd-APIs/playlist-tools'
-);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Use relative path to playlist-tools directory within the skill
+const PLAYLIST_TOOLS_PATH = path.join(__dirname, 'playlist-tools');
 
 const args = process.argv.slice(2);
 

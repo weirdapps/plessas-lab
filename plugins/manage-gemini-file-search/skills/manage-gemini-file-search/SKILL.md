@@ -3,6 +3,8 @@ name: manage-gemini-file-search
 description: Manage Google Gemini File Search stores and documents. Create stores, upload/query/update/delete/replace documents, and track store inventory. Use when working with Gemini RAG, document search, or when user mentions file search stores, document indexing, or semantic search with Gemini.
 ---
 
+> **Path Convention**: All paths in this document are relative to this skill's root directory. When executing commands, first `cd` to the skill directory or adjust paths accordingly.
+
 <objective>
 Manage Google Gemini File Search Tool for Retrieval Augmented Generation (RAG) operations. This skill enables creating document stores, uploading documents for semantic search, querying indexed content, and maintaining document repositories with version tracking.
 </objective>
@@ -13,7 +15,7 @@ Manage Google Gemini File Search Tool for Retrieval Augmented Generation (RAG) o
 ## Standard Workflow 1: Create Store and Upload Documents
 
 ```bash
-cd ~/.claude/skills/manage-gemini-file-search/references/tools
+cd ./references/tools
 
 # Create a new store
 npx ts-node create-store.ts "My-Knowledge-Base"
@@ -26,7 +28,7 @@ npx ts-node upload-document.ts "My-Knowledge-Base" ./guide.md --name "User Guide
 ## Standard Workflow 2: Query with Full Excerpts
 
 ```bash
-cd ~/.claude/skills/manage-gemini-file-search/references/tools
+cd ./references/tools
 
 # Query the store - returns answer, sources, and excerpts
 npx ts-node query-store.ts "My-Knowledge-Base" "What is the main topic?"
@@ -72,7 +74,7 @@ EXCERPTS
 ## Standard Workflow 3: Common Operations
 
 ```bash
-cd ~/.claude/skills/manage-gemini-file-search/references/tools
+cd ./references/tools
 
 # List all stores
 npx ts-node list-stores.ts
@@ -90,7 +92,7 @@ npx ts-node remove-documents.ts "My-Knowledge-Base" "Document Name"
 npx ts-node remove-documents.ts "My-Knowledge-Base" --all --force
 ```
 
-**All tools location:** `~/.claude/skills/manage-gemini-file-search/references/tools/`
+**All tools location:** `./references/tools/`
 </standard_workflows>
 
 <typescript_tools>
@@ -101,7 +103,7 @@ All operations are performed using the prebuilt TypeScript tools in [references/
 ### First-time Setup
 
 ```bash
-cd ~/.claude/skills/manage-gemini-file-search/references/tools
+cd ./references/tools
 npm install
 ```
 
@@ -540,7 +542,7 @@ JSON output structure:
 ```
 
 ### Tool Location
-All TypeScript tools are in: `~/.claude/skills/manage-gemini-file-search/references/tools/`
+All TypeScript tools are in: `./references/tools/`
 </typescript_tools>
 
 <context>
@@ -602,7 +604,7 @@ Code: 50+ languages (Python, JavaScript, TypeScript, Java, Go, etc.)
 Set up the TypeScript tools:
 
 ```bash
-cd ~/.claude/skills/manage-gemini-file-search/references/tools
+cd ./references/tools
 npm install
 
 # Ensure GEMINI_API_KEY is set

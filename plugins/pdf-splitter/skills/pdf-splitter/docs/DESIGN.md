@@ -3,7 +3,7 @@
 **Date Created:** 2026-01-02
 **Last Updated:** 2026-01-02
 **Based On:** SplitPdf-Specs.md (Python version 0.02)
-**Target Location:** `/Users/giorgosmarinos/_Tools/SplitPdfTS/`
+**Skill Location:** `./tools/`
 
 ---
 
@@ -529,11 +529,10 @@ fi
 ### Step 1: Project Initialization
 
 ```bash
-# Create project directory
-mkdir -p /Users/giorgosmarinos/_Tools/SplitPdfTS
-cd /Users/giorgosmarinos/_Tools/SplitPdfTS
+# Navigate to the skill's tools directory
+cd ./tools
 
-# Initialize npm project
+# Initialize npm project (if starting fresh)
 npm init -y
 
 # Install core dependencies

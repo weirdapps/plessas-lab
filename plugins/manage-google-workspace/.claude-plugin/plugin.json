@@ -11,6 +11,5 @@
     "google",
     "workspace",
     "typescript"
-  ],
-  "commands": "./commands"
+  ]
 }

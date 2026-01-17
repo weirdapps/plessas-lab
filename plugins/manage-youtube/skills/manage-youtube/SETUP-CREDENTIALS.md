@@ -16,7 +16,7 @@ This setup is **only required for Playlist Management features**. Content discov
 The skill comes with a pre-configured OAuth credentials file in the `skill-key` folder:
 
 ```
-~/.claude/skills/manage-youtube/skill-key/YouTubeSkill-Credentials.json
+./skill-key/YouTubeSkill-Credentials.json
 ```
 
 ## Setup Steps
@@ -34,7 +34,7 @@ mkdir -p ~/.google-skills/youtube
 Copy the credentials file from the skill-key folder to the expected runtime location:
 
 ```bash
-cp ~/.claude/skills/manage-youtube/skill-key/YouTubeSkill-Credentials.json ~/.google-skills/youtube/
+cp ./skill-key/YouTubeSkill-Credentials.json ~/.google-skills/youtube/
 ```
 
 ### Step 3: Verify the File is in Place
@@ -50,7 +50,7 @@ ls -la ~/.google-skills/youtube/YouTubeSkill-Credentials.json
 Navigate to the playlist-tools directory and install the required npm packages:
 
 ```bash
-cd ~/aiwork/TrainingMaterial/105\ -\ YouTube\ Content\ Monitoring\ using\ 3rd-APIs/playlist-tools
+cd ./tools/playlist-tools
 npm install
 ```
 
@@ -59,7 +59,7 @@ npm install
 To authenticate with YouTube for playlist management:
 
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts login
+npx tsx ./tools/playlist-auth.ts login
 ```
 
 This will:
@@ -87,7 +87,7 @@ This will:
 To verify your authentication status:
 
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts status
+npx tsx ./tools/playlist-auth.ts status
 ```
 
 ### Refresh Tokens
@@ -95,7 +95,7 @@ npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts status
 If tokens are expired:
 
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts refresh
+npx tsx ./tools/playlist-auth.ts refresh
 ```
 
 ### Logout and Re-authenticate
@@ -103,8 +103,8 @@ npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts refresh
 If you encounter persistent authentication errors, logout and login again:
 
 ```bash
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts logout
-npx tsx ~/.claude/skills/manage-youtube/tools/playlist-auth.ts login
+npx tsx ./tools/playlist-auth.ts logout
+npx tsx ./tools/playlist-auth.ts login
 ```
 
 ### Credentials File Not Found Error

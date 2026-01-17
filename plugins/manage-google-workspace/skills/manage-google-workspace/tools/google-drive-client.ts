@@ -2517,6 +2517,533 @@ export class SlidesClient {
 
     return this.addImage(presentationId, slideObjectId, imageUrl, options);
   }
+
+  // ==================== SLIDE BACKGROUND OPERATIONS ====================
+
+  /**
+   * Set the background of a slide to an image.
+   * Uses the proper Google Slides API pageBackgroundFill property.
+   * @param presentationId - The presentation ID
+   * @param slideObjectId - The slide object ID
+   * @param imageUrl - URL of the image (must be publicly accessible or a Drive URL)
+   */
+  async setSlideBackground(
+    presentationId: string,
+    slideObjectId: string,
+    imageUrl: string
+  ): Promise<void> {
+    const service = await this.getService();
+
+    await service.presentations.batchUpdate({
+      presentationId,
+      requestBody: {
+        requests: [
+          {
+            updatePageProperties: {
+              objectId: slideObjectId,
+              pageProperties: {
+                pageBackgroundFill: {
+                  stretchedPictureFill: {
+                    contentUrl: imageUrl,
+                  },
+                },
+              },
+              fields: 'pageBackgroundFill',
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  /**
+   * Set the background of a slide by slide number (1-based).
+   * @param presentationId - The presentation ID
+   * @param slideNumber - The slide number (1-based)
+   * @param imageUrl - URL of the image (must be publicly accessible or a Drive URL)
+   */
+  async setSlideBackgroundByNumber(
+    presentationId: string,
+    slideNumber: number,
+    imageUrl: string
+  ): Promise<void> {
+    const presentation = await this.getPresentation(presentationId);
+    const slides = presentation.slides || [];
+
+    if (slideNumber < 1 || slideNumber > slides.length) {
+      throw new Error(`Invalid slide number ${slideNumber}. Presentation has ${slides.length} slides.`);
+    }
+
+    const slideObjectId = slides[slideNumber - 1].objectId;
+    if (!slideObjectId) {
+      throw new Error(`Could not find object ID for slide ${slideNumber}`);
+    }
+
+    await this.setSlideBackground(presentationId, slideObjectId, imageUrl);
+  }
+
+  /**
+   * Set the background of a slide to a solid color.
+   * @param presentationId - The presentation ID
+   * @param slideObjectId - The slide object ID
+   * @param color - RGB color object with red, green, blue values (0-1)
+   */
+  async setSlideBackgroundColor(
+    presentationId: string,
+    slideObjectId: string,
+    color: { red: number; green: number; blue: number }
+  ): Promise<void> {
+    const service = await this.getService();
+
+    await service.presentations.batchUpdate({
+      presentationId,
+      requestBody: {
+        requests: [
+          {
+            updatePageProperties: {
+              objectId: slideObjectId,
+              pageProperties: {
+                pageBackgroundFill: {
+                  solidFill: {
+                    color: {
+                      rgbColor: color,
+                    },
+                  },
+                },
+              },
+              fields: 'pageBackgroundFill',
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  /**
+   * Set the background of a slide to a solid color by slide number (1-based).
+   * @param presentationId - The presentation ID
+   * @param slideNumber - The slide number (1-based)
+   * @param color - RGB color object with red, green, blue values (0-1)
+   */
+  async setSlideBackgroundColorByNumber(
+    presentationId: string,
+    slideNumber: number,
+    color: { red: number; green: number; blue: number }
+  ): Promise<void> {
+    const presentation = await this.getPresentation(presentationId);
+    const slides = presentation.slides || [];
+
+    if (slideNumber < 1 || slideNumber > slides.length) {
+      throw new Error(`Invalid slide number ${slideNumber}. Presentation has ${slides.length} slides.`);
+    }
+
+    const slideObjectId = slides[slideNumber - 1].objectId;
+    if (!slideObjectId) {
+      throw new Error(`Could not find object ID for slide ${slideNumber}`);
+    }
+
+    await this.setSlideBackgroundColor(presentationId, slideObjectId, color);
+  }
+
+  // ==================== PLACEHOLDER OPERATIONS ====================
+
+  /**
+   * Check if a page element is an empty placeholder.
+   * A placeholder is considered empty if it has no text content or only whitespace.
+   */
+  private isEmptyPlaceholder(element: slides_v1.Schema$PageElement): boolean {
+    // Check if it's a shape with placeholder property
+    if (!element.shape?.placeholder) {
+      return false;
+    }
+
+    // Check text content
+    const textElements = element.shape?.text?.textElements || [];
+    let textContent = '';
+
+    for (const textElement of textElements) {
+      if (textElement.textRun?.content) {
+        textContent += textElement.textRun.content;
+      }
+    }
+
+    // Trim and check if empty (only whitespace or newlines)
+    return textContent.trim() === '';
+  }
+
+  /**
+   * Remove empty placeholders from a specific slide.
+   * @param presentationId - The presentation ID
+   * @param slideObjectId - The slide object ID
+   * @returns Object with count of removed placeholders and their IDs
+   */
+  async removeEmptyPlaceholders(
+    presentationId: string,
+    slideObjectId: string
+  ): Promise<{ removedCount: number; removedIds: string[] }> {
+    const service = await this.getService();
+    const presentation = await this.getPresentation(presentationId);
+
+    // Find the slide
+    const slide = presentation.slides?.find(s => s.objectId === slideObjectId);
+    if (!slide) {
+      throw new Error(`Slide with ID ${slideObjectId} not found`);
+    }
+
+    // Find empty placeholders
+    const emptyPlaceholderIds: string[] = [];
+    for (const element of slide.pageElements || []) {
+      if (this.isEmptyPlaceholder(element) && element.objectId) {
+        emptyPlaceholderIds.push(element.objectId);
+      }
+    }
+
+    if (emptyPlaceholderIds.length === 0) {
+      return { removedCount: 0, removedIds: [] };
+    }
+
+    // Create delete requests for each empty placeholder
+    const requests: slides_v1.Schema$Request[] = emptyPlaceholderIds.map(objectId => ({
+      deleteObject: { objectId },
+    }));
+
+    // Execute batch update
+    await service.presentations.batchUpdate({
+      presentationId,
+      requestBody: { requests },
+    });
+
+    return { removedCount: emptyPlaceholderIds.length, removedIds: emptyPlaceholderIds };
+  }
+
+  /**
+   * Remove empty placeholders from a slide by slide number (1-based).
+   * @param presentationId - The presentation ID
+   * @param slideNumber - The slide number (1-based)
+   * @returns Object with count of removed placeholders and their IDs
+   */
+  async removeEmptyPlaceholdersByNumber(
+    presentationId: string,
+    slideNumber: number
+  ): Promise<{ removedCount: number; removedIds: string[] }> {
+    const presentation = await this.getPresentation(presentationId);
+    const slides = presentation.slides || [];
+
+    if (slideNumber < 1 || slideNumber > slides.length) {
+      throw new Error(`Invalid slide number ${slideNumber}. Presentation has ${slides.length} slides.`);
+    }
+
+    const slideObjectId = slides[slideNumber - 1].objectId;
+    if (!slideObjectId) {
+      throw new Error(`Could not find object ID for slide ${slideNumber}`);
+    }
+
+    return this.removeEmptyPlaceholders(presentationId, slideObjectId);
+  }
+
+  /**
+   * Remove empty placeholders from all slides in a presentation.
+   * @param presentationId - The presentation ID
+   * @returns Object with total count and per-slide details
+   */
+  async removeAllEmptyPlaceholders(
+    presentationId: string
+  ): Promise<{ totalRemoved: number; slideDetails: Array<{ slideNumber: number; removedCount: number }> }> {
+    const presentation = await this.getPresentation(presentationId);
+    const slides = presentation.slides || [];
+    const service = await this.getService();
+
+    // Collect all empty placeholder IDs across all slides
+    const allEmptyIds: string[] = [];
+    const slideDetails: Array<{ slideNumber: number; removedCount: number; ids: string[] }> = [];
+
+    for (let i = 0; i < slides.length; i++) {
+      const slide = slides[i];
+      const emptyIds: string[] = [];
+
+      for (const element of slide.pageElements || []) {
+        if (this.isEmptyPlaceholder(element) && element.objectId) {
+          emptyIds.push(element.objectId);
+          allEmptyIds.push(element.objectId);
+        }
+      }
+
+      if (emptyIds.length > 0) {
+        slideDetails.push({
+          slideNumber: i + 1,
+          removedCount: emptyIds.length,
+          ids: emptyIds,
+        });
+      }
+    }
+
+    if (allEmptyIds.length === 0) {
+      return { totalRemoved: 0, slideDetails: [] };
+    }
+
+    // Create delete requests for all empty placeholders
+    const requests: slides_v1.Schema$Request[] = allEmptyIds.map(objectId => ({
+      deleteObject: { objectId },
+    }));
+
+    // Execute batch update
+    await service.presentations.batchUpdate({
+      presentationId,
+      requestBody: { requests },
+    });
+
+    return {
+      totalRemoved: allEmptyIds.length,
+      slideDetails: slideDetails.map(d => ({ slideNumber: d.slideNumber, removedCount: d.removedCount })),
+    };
+  }
+
+  // ==================== SPEAKER NOTES OPERATIONS ====================
+
+  /**
+   * Get speaker notes from a slide by slide number (1-based).
+   * @param presentationId - The presentation ID
+   * @param slideNumber - The slide number (1-based)
+   * @returns The speaker notes text, or empty string if none
+   */
+  async getSpeakerNotes(presentationId: string, slideNumber: number): Promise<string> {
+    const service = await this.getService();
+
+    const response = await service.presentations.get({ presentationId });
+    const slides = response.data.slides || [];
+
+    if (slideNumber < 1 || slideNumber > slides.length) {
+      throw new Error(`Invalid slide number ${slideNumber}. Presentation has ${slides.length} slides.`);
+    }
+
+    const slide = slides[slideNumber - 1];
+    const notesPage = slide.slideProperties?.notesPage;
+
+    if (!notesPage?.pageElements) {
+      return '';
+    }
+
+    // Find the BODY placeholder which contains the notes
+    for (const element of notesPage.pageElements) {
+      if (element.shape?.placeholder?.type === 'BODY' && element.shape?.text?.textElements) {
+        const texts: string[] = [];
+        for (const textElement of element.shape.text.textElements) {
+          if (textElement.textRun?.content) {
+            texts.push(textElement.textRun.content);
+          }
+        }
+        return texts.join('').trim();
+      }
+    }
+
+    return '';
+  }
+
+  /**
+   * Set speaker notes for a slide by slide number (1-based).
+   * @param presentationId - The presentation ID
+   * @param slideNumber - The slide number (1-based)
+   * @param notesText - The text to set as speaker notes
+   */
+  async setSpeakerNotes(presentationId: string, slideNumber: number, notesText: string): Promise<void> {
+    const service = await this.getService();
+
+    const response = await service.presentations.get({ presentationId });
+    const slides = response.data.slides || [];
+
+    if (slideNumber < 1 || slideNumber > slides.length) {
+      throw new Error(`Invalid slide number ${slideNumber}. Presentation has ${slides.length} slides.`);
+    }
+
+    const slide = slides[slideNumber - 1];
+    const notesPage = slide.slideProperties?.notesPage;
+
+    if (!notesPage?.pageElements) {
+      throw new Error(`Could not find notes page for slide ${slideNumber}`);
+    }
+
+    // Find the BODY placeholder which contains the notes
+    let notesShapeId: string | null = null;
+    let hasExistingText = false;
+
+    for (const element of notesPage.pageElements) {
+      if (element.shape?.placeholder?.type === 'BODY' && element.objectId) {
+        notesShapeId = element.objectId;
+        // Check if there's existing text
+        if (element.shape?.text?.textElements) {
+          for (const textElement of element.shape.text.textElements) {
+            if (textElement.textRun?.content && textElement.textRun.content.trim()) {
+              hasExistingText = true;
+              break;
+            }
+          }
+        }
+        break;
+      }
+    }
+
+    if (!notesShapeId) {
+      throw new Error(`Could not find notes shape for slide ${slideNumber}`);
+    }
+
+    const requests: slides_v1.Schema$Request[] = [];
+
+    // Delete existing text if present
+    if (hasExistingText) {
+      requests.push({
+        deleteText: {
+          objectId: notesShapeId,
+          textRange: { type: 'ALL' },
+        },
+      });
+    }
+
+    // Insert new text
+    requests.push({
+      insertText: {
+        objectId: notesShapeId,
+        insertionIndex: 0,
+        text: notesText,
+      },
+    });
+
+    await service.presentations.batchUpdate({
+      presentationId,
+      requestBody: { requests },
+    });
+  }
+
+  // ==================== SLIDE CONTENT OPERATIONS ====================
+
+  /**
+   * Clear all text boxes from a slide (keeps background and other elements).
+   * @param presentationId - The presentation ID
+   * @param slideNumber - The slide number (1-based)
+   * @returns Object with count of deleted elements and their IDs
+   */
+  async clearSlideTextBoxes(
+    presentationId: string,
+    slideNumber: number
+  ): Promise<{ deletedCount: number; deletedIds: string[] }> {
+    const service = await this.getService();
+
+    const response = await service.presentations.get({ presentationId });
+    const slides = response.data.slides || [];
+
+    if (slideNumber < 1 || slideNumber > slides.length) {
+      throw new Error(`Invalid slide number ${slideNumber}. Presentation has ${slides.length} slides.`);
+    }
+
+    const slide = slides[slideNumber - 1];
+    const textBoxIds: string[] = [];
+
+    // Find all TEXT_BOX elements
+    for (const element of slide.pageElements || []) {
+      if (element.shape?.shapeType === 'TEXT_BOX' && element.objectId) {
+        textBoxIds.push(element.objectId);
+      }
+    }
+
+    if (textBoxIds.length === 0) {
+      return { deletedCount: 0, deletedIds: [] };
+    }
+
+    // Create delete requests
+    const requests: slides_v1.Schema$Request[] = textBoxIds.map(objectId => ({
+      deleteObject: { objectId },
+    }));
+
+    await service.presentations.batchUpdate({
+      presentationId,
+      requestBody: { requests },
+    });
+
+    return { deletedCount: textBoxIds.length, deletedIds: textBoxIds };
+  }
+
+  /**
+   * Delete specific page elements from a slide.
+   * @param presentationId - The presentation ID
+   * @param elementIds - Array of element IDs to delete
+   */
+  async deletePageElements(presentationId: string, elementIds: string[]): Promise<void> {
+    if (elementIds.length === 0) {
+      return;
+    }
+
+    const service = await this.getService();
+
+    const requests: slides_v1.Schema$Request[] = elementIds.map(objectId => ({
+      deleteObject: { objectId },
+    }));
+
+    await service.presentations.batchUpdate({
+      presentationId,
+      requestBody: { requests },
+    });
+  }
+
+  /**
+   * Get all page elements from a slide.
+   * @param presentationId - The presentation ID
+   * @param slideNumber - The slide number (1-based)
+   * @returns Array of page elements with their IDs, types, and text content
+   */
+  async getSlideElements(
+    presentationId: string,
+    slideNumber: number
+  ): Promise<Array<{ objectId: string; type: string; text?: string }>> {
+    const service = await this.getService();
+
+    const response = await service.presentations.get({ presentationId });
+    const slides = response.data.slides || [];
+
+    if (slideNumber < 1 || slideNumber > slides.length) {
+      throw new Error(`Invalid slide number ${slideNumber}. Presentation has ${slides.length} slides.`);
+    }
+
+    const slide = slides[slideNumber - 1];
+    const elements: Array<{ objectId: string; type: string; text?: string }> = [];
+
+    for (const element of slide.pageElements || []) {
+      if (!element.objectId) continue;
+
+      let type = 'unknown';
+      let text: string | undefined;
+
+      if (element.shape) {
+        type = element.shape.shapeType || 'SHAPE';
+        // Extract text if present
+        if (element.shape.text?.textElements) {
+          const texts: string[] = [];
+          for (const textElement of element.shape.text.textElements) {
+            if (textElement.textRun?.content) {
+              texts.push(textElement.textRun.content);
+            }
+          }
+          text = texts.join('').trim() || undefined;
+        }
+      } else if (element.image) {
+        type = 'IMAGE';
+      } else if (element.table) {
+        type = 'TABLE';
+      } else if (element.line) {
+        type = 'LINE';
+      } else if (element.video) {
+        type = 'VIDEO';
+      } else if (element.sheetsChart) {
+        type = 'SHEETS_CHART';
+      } else if (element.wordArt) {
+        type = 'WORD_ART';
+      } else if (element.elementGroup) {
+        type = 'GROUP';
+      }
+
+      elements.push({ objectId: element.objectId, type, text });
+    }
+
+    return elements;
+  }
 }
 
 // ==================== CLI UTILITIES ====================

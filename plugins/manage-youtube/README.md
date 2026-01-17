@@ -4,7 +4,7 @@ Search, discover, consume, and manage YouTube content using TypeScript CLI tools
 
 ## Overview
 
-cd ~/aiwork/TrainingMaterial/105\ -\ YouTube\ Content\ Monitoring\ using\ 3rd-APIs/playlist-tools
+cd ./tools/playlist-tools
 npm install
 
 ## Installation

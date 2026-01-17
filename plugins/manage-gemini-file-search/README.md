@@ -5,7 +5,7 @@ Manage Google Gemini File Search stores and documents. Create stores, upload/que
 ## Overview
 
 ```bash
-cd ~/.claude/skills/manage-gemini-file-search/references/tools
+cd ./references/tools
 
 ## Installation
 

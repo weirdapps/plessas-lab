@@ -7,7 +7,7 @@ This document explains how to set up the OAuth credentials for the Gmail skill o
 The skill comes with a pre-configured OAuth credentials file in the `skill-key` folder:
 
 ```
-~/.claude/skills/manage-gmail/skill-key/GMailSkill-Credentials.json
+./skill-key/GMailSkill-Credentials.json
 ```
 
 ## Setup Steps
@@ -25,7 +25,7 @@ mkdir -p ~/.google-skills/gmail
 Copy the credentials file from the skill-key folder to the expected runtime location:
 
 ```bash
-cp ~/.claude/skills/manage-gmail/skill-key/GMailSkill-Credentials.json ~/.google-skills/gmail/
+cp ./skill-key/GMailSkill-Credentials.json ~/.google-skills/gmail/
 ```
 
 ### Step 3: Verify the File is in Place
