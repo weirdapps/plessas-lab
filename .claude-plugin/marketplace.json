@@ -25,6 +25,23 @@
       ]
     },
     {
+      "name": "manage-gemini-file-search",
+      "source": "./plugins/manage-gemini-file-search",
+      "description": "Manage Google Gemini File Search stores and documents. Create stores, upload/query/update/delete/replace documents, and track store inventory. Use when working with Gemini RAG, document search, or when user mentions file search stores, document indexing, or semantic search with Gemini.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "manage",
+        "gemini",
+        "file",
+        "search",
+        "google"
+      ]
+    },
+    {
       "name": "manage-gmail",
       "source": "./plugins/manage-gmail",
       "description": "Access and process Gmail messages using the Gmail API. Use when the user asks to read, search, list, send, reply to, or forward emails. Supports OAuth 2.0 authentication with stored credentials.",

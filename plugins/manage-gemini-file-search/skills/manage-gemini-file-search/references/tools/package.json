@@ -1,0 +1,28 @@
+{
+  "name": "gemini-file-search-tools",
+  "version": "1.0.0",
+  "description": "Prebuilt TypeScript tools for Gemini File Search operations",
+  "type": "module",
+  "scripts": {
+    "list-stores": "npx ts-node list-stores.ts",
+    "list-documents": "npx ts-node list-documents.ts",
+    "create-store": "npx ts-node create-store.ts",
+    "delete-store": "npx ts-node delete-store.ts",
+    "query-store": "npx ts-node query-store.ts",
+    "upload-document": "npx ts-node upload-document.ts",
+    "upload-folder": "npx ts-node upload-folder.ts",
+    "remove-documents": "npx ts-node remove-documents.ts",
+    "replace-document": "npx ts-node replace-document.ts",
+    "get-store-info": "npx ts-node get-store-info.ts",
+    "export-inventory": "npx ts-node export-inventory.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^1.34.0",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
