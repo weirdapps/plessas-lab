@@ -1,0 +1,14 @@
+{
+  "name": "nbg-presentation-format",
+  "version": "1.0.0",
+  "description": "Create presentations and visual assets following National Bank of Greece (NBG) corporate brand guidelines. Includes specifications for slides, charts, tables, icons, and color palettes.",
+  "entry": "../skills/nbg-presentation-format/SKILL.md",
+  "triggers": [
+    "nbg presentation",
+    "nbg format",
+    "national bank of greece",
+    "nbg slides",
+    "nbg icon",
+    "nbg powerpoint"
+  ]
+}
