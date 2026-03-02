@@ -21,3 +21,12 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Credential files - NEVER commit
+skill-key/
+*Credentials*.json
+*credentials*.json
+*.pem
+*.key
+token.json
+client_secret*.json
