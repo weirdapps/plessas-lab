@@ -22,6 +22,21 @@ Thumbs.db
 # Logs
 *.log
 
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+
+# Temp
+*.tmp
+*.bak
+*.old
+
+# Package locks (auto-generated, not needed in marketplace)
+**/package-lock.json
+
 # Credential files - NEVER commit
 skill-key/
 *Credentials*.json

@@ -107,6 +107,22 @@
       ]
     },
     {
+      "name": "nbg-presentation-format",
+      "source": "./plugins/nbg-presentation-format",
+      "description": "Create presentations and visual assets following National Bank of Greece (NBG) corporate brand guidelines. Includes specifications for slides, charts, tables, icons, and color palettes.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Giorgos Marinos"
+      },
+      "license": "MIT",
+      "keywords": [
+        "nbg",
+        "presentation",
+        "brand",
+        "format"
+      ]
+    },
+    {
       "name": "pdf-splitter",
       "source": "./plugins/pdf-splitter",
       "description": "Split PDF files into individual pages as separate PDF or PNG files using TypeScript. Use when the user needs to extract pages from a PDF, convert PDF pages to images, or split a multi-page PDF into single-page files.",
