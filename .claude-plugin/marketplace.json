@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Skills for productivity, file management, and external services",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "pluginRoot": "./plugins"
   },
   "plugins": [
@@ -25,23 +25,6 @@
       ]
     },
     {
-      "name": "manage-gemini-file-search",
-      "source": "./plugins/manage-gemini-file-search",
-      "description": "Manage Google Gemini File Search stores and documents. Create stores, upload/query/update/delete/replace documents, and track store inventory. Use when working with Gemini RAG, document search, or when user mentions file search stores, document indexing, or semantic search with Gemini.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Giorgos Marinos"
-      },
-      "license": "MIT",
-      "keywords": [
-        "manage",
-        "gemini",
-        "file",
-        "search",
-        "google"
-      ]
-    },
-    {
       "name": "manage-gmail",
       "source": "./plugins/manage-gmail",
       "description": "Access and process Gmail messages using the Gmail API. Use when the user asks to read, search, list, send, reply to, or forward emails. Supports OAuth 2.0 authentication with stored credentials.",
@@ -54,22 +37,6 @@
         "manage",
         "gmail",
         "api"
-      ]
-    },
-    {
-      "name": "manage-google-workspace",
-      "source": "./plugins/manage-google-workspace",
-      "description": "Manage Google Workspace files, folders, and documents using TypeScript CLI tools. Full support for Google Drive (list, search, upload, download, organize), Google Docs (create, read, edit, search), Google Sheets (CRUD, queries, multi-range operations), and Google Slides (presentations, slides, text). Manage sharing permissions. Use when user needs to interact with Google Drive or any Google Workspace document types.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Giorgos Marinos"
-      },
-      "license": "MIT",
-      "keywords": [
-        "manage",
-        "google",
-        "workspace",
-        "typescript"
       ]
     },
     {
@@ -104,38 +71,6 @@
         "youtube",
         "api",
         "typescript"
-      ]
-    },
-    {
-      "name": "nbg-presentation-format",
-      "source": "./plugins/nbg-presentation-format",
-      "description": "Create presentations and visual assets following National Bank of Greece (NBG) corporate brand guidelines. Includes specifications for slides, charts, tables, icons, and color palettes.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Giorgos Marinos"
-      },
-      "license": "MIT",
-      "keywords": [
-        "nbg",
-        "presentation",
-        "brand",
-        "format"
-      ]
-    },
-    {
-      "name": "pdf-splitter",
-      "source": "./plugins/pdf-splitter",
-      "description": "Split PDF files into individual pages as separate PDF or PNG files using TypeScript. Use when the user needs to extract pages from a PDF, convert PDF pages to images, or split a multi-page PDF into single-page files.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Giorgos Marinos"
-      },
-      "license": "MIT",
-      "keywords": [
-        "pdf",
-        "splitter",
-        "typescript",
-        "image"
       ]
     }
   ]
