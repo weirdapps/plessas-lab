@@ -1,5 +1,5 @@
 # Dependencies
-node_modules/
+node_modules
 
 # Build output
 dist/
@@ -26,8 +26,8 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 *.so
-.venv/
-venv/
+.venv
+venv
 
 # Temp
 *.tmp
