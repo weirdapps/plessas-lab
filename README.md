@@ -1,6 +1,6 @@
-# Utility Marketplace
+# Integrations Marketplace
 
-A marketplace of utility and productivity plugins for Claude Code. Tools for Apple Notes, Gmail, image generation, and YouTube content management.
+A marketplace of integration plugins for Claude Code. Tools for Apple Notes, Gmail, image generation, and YouTube content management.
 
 ## Available Plugins
 
@@ -26,28 +26,28 @@ A marketplace of utility and productivity plugins for Claude Code. Tools for App
 ### Quick Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/weirdapps/marketplace-utility/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/weirdapps/integrations-marketplace/main/install.sh | bash
 ```
 
 ### Manual Install
 
 ```bash
 mkdir -p ~/.claude/plugins/marketplaces
-git clone git@github.com:weirdapps/marketplace-utility.git ~/.claude/plugins/marketplaces/marketplace-utility
-cd ~/.claude/plugins/marketplaces/marketplace-utility
+git clone git@github.com:weirdapps/integrations-marketplace.git ~/.claude/plugins/marketplaces/integrations-marketplace
+cd ~/.claude/plugins/marketplaces/integrations-marketplace
 ./install.sh
 ```
 
 ### Update
 
 ```bash
-cd ~/.claude/plugins/marketplaces/marketplace-utility && git pull
+cd ~/.claude/plugins/marketplaces/integrations-marketplace && git pull
 ```
 
 ## Directory Structure
 
 ```
-marketplace-utility/
+integrations-marketplace/
 ├── .claude-plugin/
 │   └── marketplace.json         # Marketplace manifest (lists all plugins)
 ├── plugins/
