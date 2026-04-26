@@ -10,7 +10,7 @@
     "sync": "tsx cli/sync.ts"
   },
   "dependencies": {
-    "googleapis": "^144.0.0"
+    "googleapis": "^171.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
