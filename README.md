@@ -23,20 +23,14 @@ A marketplace of integration plugins for Claude Code. Tools for Apple Notes, Gma
 
 ## Installation
 
-### Quick Install
-
-```bash
-curl -sSL https://raw.githubusercontent.com/weirdapps/integrations-marketplace/main/install.sh | bash
-```
-
-### Manual Install
+Clone this marketplace into Claude Code's marketplaces directory; Claude Code will discover the plugins on next launch:
 
 ```bash
 mkdir -p ~/.claude/plugins/marketplaces
-git clone git@github.com:weirdapps/integrations-marketplace.git ~/.claude/plugins/marketplaces/integrations-marketplace
-cd ~/.claude/plugins/marketplaces/integrations-marketplace
-./install.sh
+git clone https://github.com/weirdapps/integrations-marketplace.git ~/.claude/plugins/marketplaces/integrations-marketplace
 ```
+
+Then enable the plugins you want from the Claude Code plugin manager (`/plugin`).
 
 ### Update
 

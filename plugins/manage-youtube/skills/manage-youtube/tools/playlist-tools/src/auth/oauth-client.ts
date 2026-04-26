@@ -14,9 +14,18 @@ import { PlaylistError } from '../types/index.js';
 // Constants
 // ============================================================================
 
-const DATA_DIR = path.join(process.env.HOME || '', '.google-skills', 'youtube');
+const HOME_DIR = process.env.HOME || '';
+const DATA_DIR = path.join(HOME_DIR, '.google-skills', 'youtube');
 const CREDENTIALS_FILE = path.join(DATA_DIR, 'YouTubeSkill-Credentials.json');
 const TOKENS_FILE = path.join(DATA_DIR, 'youtube-tokens.json');
+
+/**
+ * Render an absolute $HOME path with `~` for user-facing error messages so we
+ * don't leak the OS username when stderr is captured into logs.
+ */
+function displayPath(p: string): string {
+  return HOME_DIR && p.startsWith(HOME_DIR) ? '~' + p.slice(HOME_DIR.length) : p;
+}
 
 // YouTube Data API scopes
 const SCOPES = [
@@ -33,14 +42,14 @@ const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}`;
 
 function ensureDataDir(): void {
   if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
   }
 }
 
 function loadCredentials(): OAuthCredentials {
   if (!fs.existsSync(CREDENTIALS_FILE)) {
     throw new PlaylistError(
-      `Credentials file not found at: ${CREDENTIALS_FILE}`,
+      `Credentials file not found at: ${displayPath(CREDENTIALS_FILE)}`,
       'CREDENTIALS_NOT_FOUND'
     );
   }
@@ -72,7 +81,9 @@ function loadTokens(): StoredTokens | null {
 
 function saveTokens(tokens: StoredTokens): void {
   ensureDataDir();
-  fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2), 'utf-8');
+  // 0600 keeps the long-lived refresh token unreadable to other local users
+  // (full youtube scope; theft would let an attacker delete every playlist).
+  fs.writeFileSync(TOKENS_FILE, JSON.stringify(tokens, null, 2), { encoding: 'utf-8', mode: 0o600 });
 }
 
 function deleteTokens(): void {
@@ -307,11 +318,17 @@ export async function authenticate(): Promise<void> {
   console.log(authUrl);
   console.log('\nWaiting for authorization...\n');
 
-  // Try to open browser automatically
-  const { exec } = await import('child_process');
+  // Try to open browser automatically. execFile (not exec) avoids the shell
+  // entirely so a tampered credentials file cannot inject metacharacters into
+  // the command via the auth URL Google's lib generates.
+  const { execFile } = await import('child_process');
   const openCommand = process.platform === 'darwin' ? 'open' :
                       process.platform === 'win32' ? 'start' : 'xdg-open';
-  exec(`${openCommand} "${authUrl}"`);
+  execFile(openCommand, [authUrl], (err) => {
+    if (err) {
+      console.log(`(Could not open browser automatically: ${err.message})`);
+    }
+  });
 
   // Wait for callback
   const code = await startCallbackServer();

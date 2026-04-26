@@ -1155,9 +1155,9 @@ export class TopicMonitorService {
 ### Resolving Channel Handles
 
 YouTube channels can be identified by:
-- **Channel ID**: `UCQhvDZeUrxPq9p3SkbTngkA` (24-character string starting with UC)
-- **Handle**: `@tachesteaches`
-- **URL**: `https://www.youtube.com/@tachesteaches`
+- **Channel ID**: `UC_x5XG1OV2P6uZZ5FSM9Ttw` (24-character string starting with UC)
+- **Handle**: `@GoogleDevelopers`
+- **URL**: `https://www.youtube.com/@GoogleDevelopers`
 
 The `ChannelMonitor` class provides methods to resolve handles to channel IDs and retrieve videos using any format:
 
@@ -1293,10 +1293,10 @@ async function examples() {
   await monitor.initialize();
 
   // All these formats work for any method:
-  const channel = '@tachesteaches';
-  // or: 'tachesteaches'
-  // or: 'https://www.youtube.com/@tachesteaches'
-  // or: 'UCQhvDZeUrxPq9p3SkbTngkA'
+  const channel = '@GoogleDevelopers';
+  // or: 'GoogleDevelopers'
+  // or: 'https://www.youtube.com/@GoogleDevelopers'
+  // or: 'UC_x5XG1OV2P6uZZ5FSM9Ttw'
 
   // Get the 5 most recent videos
   const recentVideos = await monitor.getRecentVideos(channel, 5);
@@ -1336,7 +1336,7 @@ async function transcribeSelectedVideos() {
   await monitor.initialize();
 
   // Get some videos
-  const videos = await monitor.getRecentVideos('@tachesteaches', 3);
+  const videos = await monitor.getRecentVideos('@GoogleDevelopers', 3);
 
   // Transcribe just the first one
   const transcript1 = await getTranscript(videos[0].id);

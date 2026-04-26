@@ -20,8 +20,18 @@ interface VideoDetailsResult {
   fullText: string;
 }
 
+// YouTube video IDs are exactly 11 chars from a known alphabet. Any input that
+// doesn't match this shape is rejected so it can't reach the third-party caption
+// scraper as-is, which would otherwise concatenate it into an outbound URL and
+// open an SSRF / data-exfil window if the input contained percent-encoded path
+// separators or arbitrary host names.
+const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
+
 function extractVideoId(videoIdOrUrl: string): string {
   if (!videoIdOrUrl.includes('/') && !videoIdOrUrl.includes('.')) {
+    if (!VIDEO_ID_RE.test(videoIdOrUrl)) {
+      throw new Error(`Invalid YouTube video ID: ${videoIdOrUrl}`);
+    }
     return videoIdOrUrl;
   }
 
@@ -33,11 +43,15 @@ function extractVideoId(videoIdOrUrl: string): string {
   for (const pattern of patterns) {
     const match = videoIdOrUrl.match(pattern);
     if (match && match[1]) {
-      return match[1];
+      const id = match[1];
+      if (!VIDEO_ID_RE.test(id)) {
+        throw new Error(`Extracted video ID has invalid shape: ${id}`);
+      }
+      return id;
     }
   }
 
-  return videoIdOrUrl;
+  throw new Error(`Could not extract a valid YouTube video ID from: ${videoIdOrUrl}`);
 }
 
 function formatTimestamp(seconds: number): string {

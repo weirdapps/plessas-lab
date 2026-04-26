@@ -72,7 +72,7 @@ npx tsx ./tools/playlist-auth.ts login
 **Get channel information**:
 ```bash
 npx tsx ./tools/channel-info.ts \
-  --channel "@tachesteaches" --json
+  --channel "@GoogleDevelopers" --json
 ```
 
 **Get recent videos from a channel**:
@@ -187,7 +187,7 @@ npx tsx ./tools/playlist-sync.ts all
 <channel_operations>
 **Get channel info (basic)**:
 ```bash
-npx tsx channel-info.ts --channel "@tachesteaches"
+npx tsx channel-info.ts --channel "@GoogleDevelopers"
 ```
 
 **Get channel info (detailed with About tab data)**:
@@ -196,9 +196,9 @@ npx tsx channel-info.ts --channel "UC_x5XG1OV2P6uZZ5FSM9Ttw" --detailed --json
 ```
 
 **Channel identifier formats** (all work for any tool):
-- Handle: `@tachesteaches`
-- Plain handle: `tachesteaches`
-- URL: `https://www.youtube.com/@tachesteaches`
+- Handle: `@GoogleDevelopers`
+- Plain handle: `GoogleDevelopers`
+- URL: `https://www.youtube.com/@GoogleDevelopers`
 - Channel ID: `UC_x5XG1OV2P6uZZ5FSM9Ttw`
 </channel_operations>
 
@@ -336,7 +336,7 @@ npx tsx favorites.ts --action list --json
 npx tsx favorites.ts --action add --channels "@GoogleDevelopers,@freeCodeCamp"
 
 # Add with full info (fetches metadata)
-npx tsx favorites.ts --action add --channels "@tachesteaches,fireship" --resolve
+npx tsx favorites.ts --action add --channels "@GoogleDevelopers,fireship" --resolve
 ```
 
 **Remove channels from favorites** (supports multiple):
@@ -634,7 +634,7 @@ npx tsx playlist-sync.ts clear --confirm
 **Get latest video and transcribe it**:
 ```bash
 # Get most recent video
-VIDEO=$(npx tsx channel-videos.ts --channel "@tachesteaches" --limit 1 --json | jq -r '.[0].id')
+VIDEO=$(npx tsx channel-videos.ts --channel "@GoogleDevelopers" --limit 1 --json | jq -r '.[0].id')
 
 # Get its transcript
 npx tsx transcript.ts --video "$VIDEO" --with-details --json

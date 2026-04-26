@@ -147,11 +147,15 @@ function getReport(
     return;
   }
 
+  // Display-only path string (never opened); the actual read in getReportContent
+  // is gated by resolveReportPath in video-library-client.ts.
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  const displayPath = path.join(getReportsDir(), report.filename);
   const result = {
     id: report.id,
     title: report.title,
     filename: report.filename,
-    filepath: path.join(getReportsDir(), report.filename),
+    filepath: displayPath,
     videoId: report.videoId,
     videoTitle: report.videoTitle,
     videoUrl: report.videoUrl,

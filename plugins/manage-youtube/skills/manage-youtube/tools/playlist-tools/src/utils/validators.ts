@@ -53,10 +53,23 @@ export function validateVideoId(id: string, context?: string): void {
 const PLAYLIST_ID_PREFIXES = ['PL', 'UU', 'LL', 'WL', 'HL', 'FL', 'OL', 'RD', 'RDMM', 'RDEM'];
 
 /**
+ * Maximum reasonable playlist ID length. Real YouTube IDs are typically 34
+ * characters (PL + 32) but some prefix variants and test IDs are longer; 64 is
+ * a generous cap that still prevents a megabyte-long string from reaching the
+ * API and triggering retries / exponential backoff (a quota DoS).
+ */
+const MAX_PLAYLIST_ID_LENGTH = 64;
+
+/**
  * Check if a string is a valid YouTube playlist ID
  */
 export function isValidPlaylistId(id: string): boolean {
   if (!id || typeof id !== 'string') {
+    return false;
+  }
+
+  // Cap length BEFORE regex match to defuse pathological inputs.
+  if (id.length > MAX_PLAYLIST_ID_LENGTH) {
     return false;
   }
 

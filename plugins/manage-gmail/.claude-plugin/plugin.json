@@ -3,7 +3,7 @@
   "description": "Access and process Gmail messages using the Gmail API. Use when the user asks to read, search, list, send, reply to, or forward emails. Supports OAuth 2.0 authentication with stored credentials.",
   "version": "1.0.0",
   "author": {
-    "name": "Giorgos Marinos"
+    "name": "weirdapps"
   },
   "license": "MIT",
   "keywords": [

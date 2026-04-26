@@ -17,22 +17,27 @@ parser = argparse.ArgumentParser(description="Read a note from agent-notes folde
 parser.add_argument("--title", required=True, help="Note title to read")
 args = parser.parse_args()
 
-title = args.title.replace('"', '\\"')
-
-script = f'''
-tell application "Notes"
-    if not (exists folder "{FOLDER}") then
-        return "Folder not found"
-    end if
-    try
-        set n to first note of folder "{FOLDER}" whose name is "{title}"
-        return body of n
-    on error
-        return "Note not found: {title}"
-    end try
-end tell
+# Untrusted input is passed via osascript argv, never interpolated into the script source.
+script = '''
+on run argv
+    set folderName to item 1 of argv
+    set theTitle to item 2 of argv
+    tell application "Notes"
+        if not (exists folder folderName) then
+            return "Folder not found"
+        end if
+        try
+            set n to first note of folder folderName whose name is theTitle
+            return body of n
+        on error
+            return "Note not found: " & theTitle
+        end try
+    end tell
+end run
 '''
 
-result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+result = subprocess.run(
+    ["osascript", "-e", script, FOLDER, args.title],
+    capture_output=True, text=True
+)
 print(result.stdout.strip())
-

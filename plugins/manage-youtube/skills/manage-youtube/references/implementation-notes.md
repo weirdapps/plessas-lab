@@ -39,9 +39,9 @@ The tools support multiple channel identifier formats:
 
 ```typescript
 // All these resolve to the same channel:
-"@tachesteaches"                           // Handle with @
-"tachesteaches"                            // Handle without @
-"https://www.youtube.com/@tachesteaches"   // Full URL
+"@GoogleDevelopers"                           // Handle with @
+"GoogleDevelopers"                            // Handle without @
+"https://www.youtube.com/@GoogleDevelopers"   // Full URL
 "UC_x5XG1OV2P6uZZ5FSM9Ttw"                // Channel ID
 ```
 
@@ -302,7 +302,7 @@ npx tsx video-thematics.ts --help
 Test with known channels:
 - `@GoogleDevelopers` (UC_x5XG1OV2P6uZZ5FSM9Ttw)
 - `@freeCodeCamp` (UC8butISFwT-Wl7EV0hUK0BQ)
-- `@tachesteaches`
+- `@GoogleDevelopers`
 
 Test video for transcripts:
 - `dQw4w9WgXcQ` (Rick Astley - Never Gonna Give You Up)

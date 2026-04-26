@@ -1,2 +1,33 @@
 version: 2
-updates: []
+updates:
+  # GitHub Actions used by the validation workflow
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Each plugin keeps its own package.json; dependabot must be told about each one
+  - package-ecosystem: npm
+    directory: /plugins/manage-gmail/skills/manage-gmail/scripts
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /plugins/manage-nano-banana/skills/manage-nano-banana/tools
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /plugins/manage-youtube/skills/manage-youtube/tools
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /plugins/manage-youtube/skills/manage-youtube/tools/playlist-tools
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

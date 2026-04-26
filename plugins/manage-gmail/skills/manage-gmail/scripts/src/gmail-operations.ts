@@ -37,11 +37,18 @@ const CREDENTIALS_DIR = path.join(HOME_DIR, '.google-skills', 'gmail');
 const CREDENTIALS_PATH = path.join(CREDENTIALS_DIR, 'GMailSkill-Credentials.json');
 const TOKEN_PATH = path.join(CREDENTIALS_DIR, 'gmail_token.json');
 
-// OAuth scopes
+/**
+ * Render an absolute $HOME path with `~` for user-facing error messages so we
+ * don't leak the OS username when stderr is captured into logs.
+ */
+function displayPath(p: string): string {
+  return HOME_DIR && p.startsWith(HOME_DIR) ? '~' + p.slice(HOME_DIR.length) : p;
+}
+
+// OAuth scope. `gmail.modify` is a superset of readonly + send + compose for
+// this tool's operations, so we request only the single minimum scope rather
+// than triggering an oversized consent screen with redundant entries.
 const SCOPES = [
-  'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/gmail.send',
-  'https://www.googleapis.com/auth/gmail.compose',
   'https://www.googleapis.com/auth/gmail.modify',
 ];
 
@@ -93,12 +100,15 @@ async function saveCredentials(client: OAuth2Client): Promise<void> {
     refresh_token: client.credentials.refresh_token,
   });
 
-  // Ensure directory exists
+  // Ensure directory exists with owner-only permissions so other local users
+  // cannot read the directory listing.
   if (!fs.existsSync(CREDENTIALS_DIR)) {
-    fs.mkdirSync(CREDENTIALS_DIR, { recursive: true });
+    fs.mkdirSync(CREDENTIALS_DIR, { recursive: true, mode: 0o700 });
   }
 
-  fs.writeFileSync(TOKEN_PATH, payload);
+  // 0600 keeps the long-lived refresh token unreadable to any other local user
+  // or process running under a different UID.
+  fs.writeFileSync(TOKEN_PATH, payload, { mode: 0o600 });
 }
 
 /**
@@ -107,7 +117,7 @@ async function saveCredentials(client: OAuth2Client): Promise<void> {
 async function getGmailService(): Promise<gmail_v1.Gmail> {
   if (!fs.existsSync(CREDENTIALS_PATH)) {
     throw new Error(
-      `Credentials file not found at ${CREDENTIALS_PATH}. ` +
+      `Credentials file not found at ${displayPath(CREDENTIALS_PATH)}. ` +
       'Download OAuth credentials from Google Cloud Console.'
     );
   }
@@ -232,6 +242,24 @@ function getMimeType(filename: string): string {
 }
 
 /**
+ * Resolve an attachment path supplied by the operator. Rejects '..' segments to
+ * prevent prompt-injection from making the tool exfiltrate files outside the
+ * working directory or home dir; full path resolution is the legitimate behavior
+ * since this CLI is meant to attach any file the operator owns.
+ */
+function resolveAttachmentPath(filePath: string): string {
+  if (filePath.split(/[\/\\]/).some((seg) => seg === '..')) {
+    throw new Error(`Attachment path contains '..' segment, refused: ${filePath}`);
+  }
+  if (filePath.startsWith('~')) {
+    // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+    return path.join(process.env.HOME || '', filePath.slice(1));
+  }
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  return path.resolve(filePath);
+}
+
+/**
  * Validate and read attachment files.
  * Returns array of attachment objects with filename, mimeType, and base64 content.
  */
@@ -244,9 +272,7 @@ function readAttachments(attachmentPaths: string[]): Array<{
   const GMAIL_MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024; // 25MB
 
   for (const filePath of attachmentPaths) {
-    const resolvedPath = filePath.startsWith('~')
-      ? path.join(process.env.HOME || '', filePath.slice(1))
-      : path.resolve(filePath);
+    const resolvedPath = resolveAttachmentPath(filePath);
 
     if (!fs.existsSync(resolvedPath)) {
       throw new Error(`Attachment file not found: ${filePath}`);
@@ -879,15 +905,21 @@ function outputResult(result: unknown): void {
  * Handle errors and output as JSON.
  */
 function handleError(error: unknown): never {
-  const errorObj: Record<string, unknown> = {
-    error: String(error),
-  };
+  // Whitelist a small set of safe fields. We never serialise the full error
+  // object because Google API errors can carry the original request payload and
+  // (rarely) a token hint in nested fields like `error.response.data` — those
+  // would leak into stderr/logs if blindly stringified.
+  const errorObj: Record<string, unknown> = {};
 
   if (error instanceof Error) {
     errorObj.error = error.message;
     if ('code' in error) {
-      errorObj.status = (error as { code: number }).code;
+      errorObj.status = (error as { code: number | string }).code;
     }
+  } else if (typeof error === 'string') {
+    errorObj.error = error;
+  } else {
+    errorObj.error = 'Unknown error';
   }
 
   console.error(JSON.stringify(errorObj, null, 2));

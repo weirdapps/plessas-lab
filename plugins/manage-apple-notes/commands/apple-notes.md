@@ -30,10 +30,18 @@ Routes to the specialized skill containing AppleScript-based workflows for note 
 4. Return results to user
 </process>
 
+<destructive_operations>
+The `delete` operation removes a note permanently — Apple Notes does not move
+deleted notes to a recoverable trash for AppleScript-driven deletes. Always
+confirm with the user before invoking `delete`, quoting the exact note title
+back to them. Do not delete based on inferred intent from prior turns.
+</destructive_operations>
+
 <success_criteria>
 - Operation completed successfully
 - Clear feedback provided to user
 - For create: Note visible in Apple Notes app
 - For read: Full HTML content returned
 - For list: All notes in agent-notes folder shown
+- For delete: User confirmed the exact title before execution
 </success_criteria>

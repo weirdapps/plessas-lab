@@ -17,10 +17,10 @@ Usage:
     python attach-clipboard-image.py --title "My Note" --label "screenshot.png"
 """
 import argparse
+import os
 import subprocess
 import sys
 import tempfile
-import os
 
 FOLDER = "agent-notes"
 
@@ -29,87 +29,100 @@ parser.add_argument("--title", required=True, help="Note title to attach image t
 parser.add_argument("--label", help="Optional label to display above the image")
 args = parser.parse_args()
 
-def escape_applescript(s):
-    """Escape string for AppleScript double-quoted string."""
-    return s.replace('\\', '\\\\').replace('"', '\\"')
+# tempfile.mkstemp creates a uniquely-named file atomically with O_EXCL and mode 0600.
+# Replaces the previous fixed /tmp/clipboard_image_temp.png path, which was vulnerable
+# to symlink attacks (a local attacker could pre-create the path as a symlink to
+# arbitrary files and the AppleScript write would clobber the target).
+fd, temp_image_path = tempfile.mkstemp(suffix='.png', prefix='clipboard_image_')
+os.close(fd)
 
-# Create a temporary file for the clipboard image
-temp_dir = tempfile.gettempdir()
-temp_image_path = os.path.join(temp_dir, "clipboard_image_temp.png")
-
-# Save clipboard image to temp file using AppleScript
-save_clipboard_script = f'''
-try
-    set theFile to (POSIX file "{temp_image_path}")
-    set theImage to the clipboard as «class PNGf»
-    set fileRef to open for access theFile with write permission
-    write theImage to fileRef
-    close access fileRef
-    return "success"
-on error errMsg
-    return "error: " & errMsg
-end try
-'''
-
-result = subprocess.run(["osascript", "-e", save_clipboard_script], capture_output=True, text=True)
-if result.returncode != 0 or "error:" in result.stdout:
-    error_msg = result.stderr.strip() or result.stdout.strip()
-    print(f"Error: Could not save clipboard image. Make sure you have an image copied to clipboard.\n{error_msg}")
-    sys.exit(1)
-
-# Verify the image file was created
-if not os.path.exists(temp_image_path) or os.path.getsize(temp_image_path) == 0:
-    print("Error: No image found in clipboard or failed to save.")
-    sys.exit(1)
-
-title = escape_applescript(args.title)
-
-# If label is provided, add it to the note body first
-if args.label:
-    label = escape_applescript(args.label)
-    add_label_script = f'''
-    tell application "Notes"
+try:
+    # Untrusted input (paths, titles, labels) is passed via osascript argv, never
+    # interpolated into the script source — closes the AppleScript injection vector.
+    save_script = '''
+    on run argv
+        set imagePath to item 1 of argv
         try
-            set theNote to the first note in folder "{FOLDER}" whose name is "{title}"
-            set currentBody to the body of theNote
-            set the body of theNote to currentBody & "<div><b>{label}</b></div>"
-            return "label_added"
+            set theFile to (POSIX file imagePath)
+            set theImage to the clipboard as «class PNGf»
+            set fileRef to open for access theFile with write permission
+            write theImage to fileRef
+            close access fileRef
+            return "success"
         on error errMsg
             return "error: " & errMsg
         end try
-    end tell
+    end run
     '''
-    result = subprocess.run(["osascript", "-e", add_label_script], capture_output=True, text=True)
-    if "error:" in result.stdout:
-        print(f"Warning: Could not add label: {result.stdout}")
+    result = subprocess.run(
+        ["osascript", "-e", save_script, temp_image_path],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0 or "error:" in result.stdout:
+        error_msg = result.stderr.strip() or result.stdout.strip()
+        print(f"Error: Could not save clipboard image. Make sure you have an image copied to clipboard.\n{error_msg}")
+        sys.exit(1)
 
-# Attach the image to the note
-attach_script = f'''
-tell application "Notes"
-    try
-        set theNote to the first note in folder "{FOLDER}" whose name is "{title}"
-        set theAttachment to POSIX file "{temp_image_path}"
-        tell theNote
-            make new attachment with data theAttachment
+    if not os.path.exists(temp_image_path) or os.path.getsize(temp_image_path) == 0:
+        print("Error: No image found in clipboard or failed to save.")
+        sys.exit(1)
+
+    if args.label:
+        label_script = '''
+        on run argv
+            set folderName to item 1 of argv
+            set theTitle to item 2 of argv
+            set theLabel to item 3 of argv
+            tell application "Notes"
+                try
+                    set theNote to the first note in folder folderName whose name is theTitle
+                    set currentBody to the body of theNote
+                    set the body of theNote to currentBody & "<div><b>" & theLabel & "</b></div>"
+                    return "label_added"
+                on error errMsg
+                    return "error: " & errMsg
+                end try
+            end tell
+        end run
+        '''
+        result = subprocess.run(
+            ["osascript", "-e", label_script, FOLDER, args.title, args.label],
+            capture_output=True, text=True
+        )
+        if "error:" in result.stdout:
+            print(f"Warning: Could not add label: {result.stdout}")
+
+    attach_script = '''
+    on run argv
+        set folderName to item 1 of argv
+        set theTitle to item 2 of argv
+        set imagePath to item 3 of argv
+        tell application "Notes"
+            try
+                set theNote to the first note in folder folderName whose name is theTitle
+                set theAttachment to POSIX file imagePath
+                tell theNote
+                    make new attachment with data theAttachment
+                end tell
+                return "Attached image to: " & theTitle
+            on error errMsg
+                return "error: " & errMsg
+            end try
         end tell
-        return "Attached image to: {title}"
-    on error errMsg
-        return "error: " & errMsg
-    end try
-end tell
-'''
-
-result = subprocess.run(["osascript", "-e", attach_script], capture_output=True, text=True)
-output = result.stdout.strip()
-
-# Clean up temp file
-try:
-    os.remove(temp_image_path)
-except:
-    pass
-
-if "error:" in output:
-    print(f"Error: {output}")
-    sys.exit(1)
-else:
-    print(output)
+    end run
+    '''
+    result = subprocess.run(
+        ["osascript", "-e", attach_script, FOLDER, args.title, temp_image_path],
+        capture_output=True, text=True
+    )
+    output = result.stdout.strip()
+    if "error:" in output:
+        print(f"Error: {output}")
+        sys.exit(1)
+    else:
+        print(output)
+finally:
+    try:
+        os.remove(temp_image_path)
+    except OSError:
+        pass

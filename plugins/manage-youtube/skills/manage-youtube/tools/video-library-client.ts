@@ -225,6 +225,24 @@ export function generateReportFilename(title: string, videoId?: string): string 
   return `${timestamp}-${safeTitle}${suffix}.md`;
 }
 
+/**
+ * Resolve a report file path under REPORTS_DIR while refusing any filename that
+ * escapes the directory (e.g. via "..", an absolute path, or a symlink-friendly
+ * separator). The reports index is JSON on disk and could be tampered with by
+ * a future import/sync feature; without this guard, a malicious filename like
+ * "../../etc/passwd" would let getReportContent or deleteReport read or unlink
+ * arbitrary files.
+ */
+function resolveReportPath(filename: string): string {
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+  const resolved = path.resolve(REPORTS_DIR, filename);
+  const root = path.resolve(REPORTS_DIR) + path.sep;
+  if (!(resolved + path.sep).startsWith(root)) {
+    throw new Error(`Refused report filename outside reports dir: ${filename}`);
+  }
+  return resolved;
+}
+
 export function saveReport(
   content: string,
   title: string,
@@ -238,7 +256,7 @@ export function saveReport(
   ensureReportsDir();
 
   const filename = generateReportFilename(title, options?.videoId);
-  const filepath = path.join(REPORTS_DIR, filename);
+  const filepath = resolveReportPath(filename);
   const now = new Date().toISOString();
 
   // Write the report file
@@ -275,7 +293,7 @@ export function saveReport(
 }
 
 export function getReportContent(filename: string): string | null {
-  const filepath = path.join(REPORTS_DIR, filename);
+  const filepath = resolveReportPath(filename);
 
   if (!fs.existsSync(filepath)) {
     return null;
@@ -303,7 +321,7 @@ export function deleteReport(reportId: string): boolean {
   }
 
   const report = index.reports[reportIndex];
-  const filepath = path.join(REPORTS_DIR, report.filename);
+  const filepath = resolveReportPath(report.filename);
 
   // Remove file
   if (fs.existsSync(filepath)) {

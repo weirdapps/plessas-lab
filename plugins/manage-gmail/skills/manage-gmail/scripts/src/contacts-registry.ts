@@ -53,15 +53,16 @@ export function loadRegistry(): ContactsRegistry {
 }
 
 /**
- * Saves the contacts registry to disk.
+ * Saves the contacts registry to disk. The registry contains personal email
+ * addresses, so the file is written 0600 and the parent dir 0700 to keep it
+ * unreadable to any other local user or process under a different UID.
  */
 export function saveRegistry(registry: ContactsRegistry): void {
-  // Ensure directory exists
   if (!fs.existsSync(CREDENTIALS_DIR)) {
-    fs.mkdirSync(CREDENTIALS_DIR, { recursive: true });
+    fs.mkdirSync(CREDENTIALS_DIR, { recursive: true, mode: 0o700 });
   }
 
-  fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2));
+  fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2), { mode: 0o600 });
 }
 
 /**
