@@ -15,7 +15,7 @@
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
     "commander": "^14.0.3",
-    "googleapis": "^144.0.0"
+    "googleapis": "^171.4.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
