@@ -7,7 +7,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "youtubei.js": "^16.0.1",
+    "youtubei.js": "^17.0.1",
     "youtube-sr": "^4.3.11",
     "youtube-caption-extractor": "^1.9.1"
   },
