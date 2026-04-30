@@ -21,7 +21,7 @@ import { PlaylistError } from '../types/index.js';
 // Constants
 // ============================================================================
 
-const DATA_DIR = path.join(process.env.HOME || '', '.google-skills', 'youtube');
+const DATA_DIR = path.join(process.env.HOME || process.env.USERPROFILE || '', '.google-skills', 'youtube');
 const CACHE_FILE = path.join(DATA_DIR, 'playlists-cache.json');
 const CACHE_VERSION = '1.0';
 

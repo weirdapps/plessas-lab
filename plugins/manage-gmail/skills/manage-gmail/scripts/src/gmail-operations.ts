@@ -253,7 +253,7 @@ function resolveAttachmentPath(filePath: string): string {
   }
   if (filePath.startsWith('~')) {
     // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
-    return path.join(process.env.HOME || '', filePath.slice(1));
+    return path.join(process.env.HOME || process.env.USERPROFILE || '', filePath.slice(1));
   }
   // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   return path.resolve(filePath);

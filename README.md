@@ -4,12 +4,12 @@ A marketplace of integration plugins for Claude Code. Tools for Apple Notes, Gma
 
 ## Available Plugins
 
-| Plugin | Version | Category | Description |
-|--------|---------|----------|-------------|
-| [manage-apple-notes](./plugins/manage-apple-notes/) | v1.0 | Productivity | CRUD operations for Apple Notes — persistent storage of thoughts, data, and information across sessions |
-| [manage-gmail](./plugins/manage-gmail/) | v1.0 | Communications | Access and process Gmail messages via the Gmail API — read, search, list, send, reply, and forward emails with OAuth 2.0 |
-| [manage-nano-banana](./plugins/manage-nano-banana/) | v1.0 | Creative | Generate and edit images, diagrams, infographics, and visualizations using Google's Nano Banana API (Gemini Image Generation) |
-| [manage-youtube](./plugins/manage-youtube/) | v1.0 | Media | Search, discover, and manage YouTube content — channels, videos, transcripts, favorites, playlists via TypeScript CLI tools |
+| Plugin | Version | Category | Platform | Description |
+|--------|---------|----------|----------|-------------|
+| [manage-apple-notes](./plugins/manage-apple-notes/) | v1.0 | Productivity | macOS only | CRUD operations for Apple Notes — persistent storage of thoughts, data, and information across sessions |
+| [manage-gmail](./plugins/manage-gmail/) | v1.0 | Communications | All platforms | Access and process Gmail messages via the Gmail API — read, search, list, send, reply, and forward emails with OAuth 2.0 |
+| [manage-nano-banana](./plugins/manage-nano-banana/) | v1.0 | Creative | All platforms | Generate and edit images, diagrams, infographics, and visualizations using Google's Nano Banana API (Gemini Image Generation) |
+| [manage-youtube](./plugins/manage-youtube/) | v1.0 | Media | All platforms | Search, discover, and manage YouTube content — channels, videos, transcripts, favorites, playlists via TypeScript CLI tools |
 
 ## Commands
 

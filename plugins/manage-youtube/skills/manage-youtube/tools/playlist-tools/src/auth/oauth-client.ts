@@ -14,7 +14,7 @@ import { PlaylistError } from '../types/index.js';
 // Constants
 // ============================================================================
 
-const HOME_DIR = process.env.HOME || '';
+const HOME_DIR = process.env.HOME || process.env.USERPROFILE || '';
 const DATA_DIR = path.join(HOME_DIR, '.google-skills', 'youtube');
 const CREDENTIALS_FILE = path.join(DATA_DIR, 'YouTubeSkill-Credentials.json');
 const TOKENS_FILE = path.join(DATA_DIR, 'youtube-tokens.json');
@@ -318,17 +318,26 @@ export async function authenticate(): Promise<void> {
   console.log(authUrl);
   console.log('\nWaiting for authorization...\n');
 
-  // Try to open browser automatically. execFile (not exec) avoids the shell
-  // entirely so a tampered credentials file cannot inject metacharacters into
-  // the command via the auth URL Google's lib generates.
-  const { execFile } = await import('child_process');
-  const openCommand = process.platform === 'darwin' ? 'open' :
-                      process.platform === 'win32' ? 'start' : 'xdg-open';
-  execFile(openCommand, [authUrl], (err) => {
-    if (err) {
-      console.log(`(Could not open browser automatically: ${err.message})`);
-    }
-  });
+  // Try to open browser automatically. On macOS/Linux execFile (not exec)
+  // avoids the shell entirely so a tampered credentials file cannot inject
+  // metacharacters into the command via the auth URL Google's lib generates.
+  // On Windows, `start` is a cmd.exe built-in (not an executable), so we
+  // must use exec instead of execFile.
+  const { exec, execFile } = await import('child_process');
+  if (process.platform === 'win32') {
+    exec(`start "" "${authUrl}"`, (err) => {
+      if (err) {
+        console.log(`(Could not open browser automatically: ${err.message})`);
+      }
+    });
+  } else {
+    const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
+    execFile(cmd, [authUrl], (err) => {
+      if (err) {
+        console.log(`(Could not open browser automatically: ${err.message})`);
+      }
+    });
+  }
 
   // Wait for callback
   const code = await startCallbackServer();

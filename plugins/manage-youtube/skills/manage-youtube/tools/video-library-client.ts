@@ -10,7 +10,7 @@ import { Innertube } from 'youtubei.js';
 // Constants
 // ============================================================================
 
-const DATA_DIR = path.join(process.env.HOME || '', '.google-skills', 'youtube');
+const DATA_DIR = path.join(process.env.HOME || process.env.USERPROFILE || '', '.google-skills', 'youtube');
 const SAVED_VIDEOS_FILE = path.join(DATA_DIR, 'saved-videos.json');
 
 // ============================================================================
