@@ -19,7 +19,7 @@ import {
 } from './youtube-client.js';
 
 // Data directory for YouTube skill data
-const DATA_DIR = path.join(process.env.HOME || '~', '.google-skills', 'youtube');
+const DATA_DIR = path.join(process.env.HOME || process.env.USERPROFILE || '', '.google-skills', 'youtube');
 const FAVORITES_FILE = path.join(DATA_DIR, 'favorite-channels.json');
 
 export interface FavoriteChannel {

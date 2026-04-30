@@ -2,6 +2,10 @@
 
 Interact with the Apple Notes app. CRUD operations for persistent storage of thoughts, data, and information across sessions.
 
+## Platform Requirements
+
+This plugin requires **macOS**. It uses Apple Notes and AppleScript, which are not available on Windows or Linux.
+
 ## Overview
 
 See SKILL.md for detailed documentation.
