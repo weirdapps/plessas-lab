@@ -15,26 +15,72 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Install dependencies
+        run: pip install pyyaml
+
       - name: Validate marketplace.json
         run: |
           if [ ! -f ".claude-plugin/marketplace.json" ]; then
-            echo "Error: marketplace.json not found"
+            echo "✗ marketplace.json not found"
             exit 1
           fi
-          echo "marketplace.json found"
-          cat .claude-plugin/marketplace.json | python3 -m json.tool
+          echo "✓ marketplace.json found"
+          cat .claude-plugin/marketplace.json | python3 -m json.tool > /dev/null
+          echo "✓ marketplace.json is valid JSON"
 
       - name: Validate plugin manifests
         run: |
           for dir in plugins/*/; do
-            if [ -d "$dir" ]; then
+            if [ -d "$dir" ] && [[ "$(basename "$dir")" != _* ]]; then
               plugin_json="${dir}.claude-plugin/plugin.json"
               if [ ! -f "$plugin_json" ]; then
-                echo "Error: Missing plugin.json in $dir"
+                echo "✗ Missing .claude-plugin/plugin.json in $dir"
                 exit 1
               fi
-              echo "Validating $plugin_json"
-              cat "$plugin_json" | python3 -m json.tool
+              echo "✓ Validating $plugin_json"
+              cat "$plugin_json" | python3 -m json.tool > /dev/null
+              for field in name description version; do
+                if ! python3 -c "import json; d=json.load(open('$plugin_json')); assert '$field' in d" 2>/dev/null; then
+                  echo "✗ Missing required field '$field' in $plugin_json"
+                  exit 1
+                fi
+              done
             fi
           done
-          echo "All plugin manifests valid"
+          echo "✓ All plugin manifests valid"
+
+      - name: Validate README files exist
+        run: |
+          errors=0
+          if [ ! -f "README.md" ]; then
+            echo "✗ Missing: README.md"
+            errors=$((errors + 1))
+          fi
+          for dir in plugins/*/; do
+            if [ -d "$dir" ] && [[ "$(basename "$dir")" != _* ]]; then
+              if [ ! -f "${dir}README.md" ]; then
+                echo "✗ Missing: ${dir}README.md"
+                errors=$((errors + 1))
+              fi
+            fi
+          done
+          [ $errors -eq 0 ] && echo "✓ All READMEs present" || exit 1
+
+      - name: Validate command frontmatter
+        run: |
+          errors=0
+          for cmd_file in plugins/*/commands/*.md; do
+            if [ -f "$cmd_file" ]; then
+              if ! head -1 "$cmd_file" | grep -q "^---$"; then
+                echo "✗ $cmd_file missing frontmatter"
+                errors=$((errors + 1))
+              fi
+            fi
+          done
+          [ $errors -eq 0 ] && echo "✓ All command files have frontmatter" || exit 1
+
+      - name: Consistency checks
+        run: python3 scripts/validate_consistency.py --verbose
+
+      - name: Summary
+        run: echo "✓ All validation checks passed"
