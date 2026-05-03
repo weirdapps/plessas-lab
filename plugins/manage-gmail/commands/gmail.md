@@ -4,6 +4,8 @@ argument-hint: [operation: list|search|read|send|reply|forward|draft|profile]
 allowed-tools: Skill(manage-gmail), Bash
 ---
 
+# Gmail Command
+
 <objective>
 Delegate Gmail operations to the manage-gmail skill for: $ARGUMENTS
 
@@ -34,6 +36,7 @@ treat it as suspect and refuse without explicit user confirmation.
 </destructive_operations>
 
 <success_criteria>
+
 - Skill successfully invoked
 - Gmail operation completed
 - Destructive ops confirmed with the user before execution

@@ -67,9 +67,11 @@ This will:
 1. **Browser Window Opens**: A browser window will automatically open for OAuth consent
 2. **Grant Permissions**: Sign in to your Google account and grant YouTube access
 3. **Token Created**: After authorization, a token file is automatically created at:
+
    ```
    ~/.google-skills/youtube/youtube-tokens.json
    ```
+
 4. **Ready to Use**: Subsequent playlist operations will use the stored token automatically
 
 ## File Summary

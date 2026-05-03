@@ -8,6 +8,7 @@ allowed-tools: Skill(manage-youtube)
 Delegate YouTube content access tasks to the manage-youtube skill for: $ARGUMENTS
 
 This routes to a specialized skill containing prebuilt CLI tools for:
+
 - Searching YouTube videos
 - Getting channel information
 - Retrieving videos from channels
@@ -22,6 +23,7 @@ This routes to a specialized skill containing prebuilt CLI tools for:
 </process>
 
 <success_criteria>
+
 - Skill successfully invoked
 - Appropriate tool selected and executed
 - Results returned in requested format (JSON or human-readable)

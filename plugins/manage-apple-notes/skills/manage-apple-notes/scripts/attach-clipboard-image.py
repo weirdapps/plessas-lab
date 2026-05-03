@@ -16,6 +16,7 @@ Usage:
     # Attach with a label
     python attach-clipboard-image.py --title "My Note" --label "screenshot.png"
 """
+
 import argparse
 import os
 import subprocess
@@ -33,13 +34,13 @@ args = parser.parse_args()
 # Replaces the previous fixed /tmp/clipboard_image_temp.png path, which was vulnerable
 # to symlink attacks (a local attacker could pre-create the path as a symlink to
 # arbitrary files and the AppleScript write would clobber the target).
-fd, temp_image_path = tempfile.mkstemp(suffix='.png', prefix='clipboard_image_')
+fd, temp_image_path = tempfile.mkstemp(suffix=".png", prefix="clipboard_image_")
 os.close(fd)
 
 try:
     # Untrusted input (paths, titles, labels) is passed via osascript argv, never
     # interpolated into the script source — closes the AppleScript injection vector.
-    save_script = '''
+    save_script = """
     on run argv
         set imagePath to item 1 of argv
         try
@@ -53,14 +54,15 @@ try:
             return "error: " & errMsg
         end try
     end run
-    '''
+    """
     result = subprocess.run(
-        ["osascript", "-e", save_script, temp_image_path],
-        capture_output=True, text=True
+        ["osascript", "-e", save_script, temp_image_path], capture_output=True, text=True
     )
     if result.returncode != 0 or "error:" in result.stdout:
         error_msg = result.stderr.strip() or result.stdout.strip()
-        print(f"Error: Could not save clipboard image. Make sure you have an image copied to clipboard.\n{error_msg}")
+        print(
+            f"Error: Could not save clipboard image. Make sure you have an image copied to clipboard.\n{error_msg}"
+        )
         sys.exit(1)
 
     if not os.path.exists(temp_image_path) or os.path.getsize(temp_image_path) == 0:
@@ -68,7 +70,7 @@ try:
         sys.exit(1)
 
     if args.label:
-        label_script = '''
+        label_script = """
         on run argv
             set folderName to item 1 of argv
             set theTitle to item 2 of argv
@@ -84,15 +86,16 @@ try:
                 end try
             end tell
         end run
-        '''
+        """
         result = subprocess.run(
             ["osascript", "-e", label_script, FOLDER, args.title, args.label],
-            capture_output=True, text=True
+            capture_output=True,
+            text=True,
         )
         if "error:" in result.stdout:
             print(f"Warning: Could not add label: {result.stdout}")
 
-    attach_script = '''
+    attach_script = """
     on run argv
         set folderName to item 1 of argv
         set theTitle to item 2 of argv
@@ -110,10 +113,11 @@ try:
             end try
         end tell
     end run
-    '''
+    """
     result = subprocess.run(
         ["osascript", "-e", attach_script, FOLDER, args.title, temp_image_path],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     output = result.stdout.strip()
     if "error:" in output:

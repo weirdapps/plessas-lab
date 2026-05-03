@@ -73,6 +73,7 @@ python scripts/attach-clipboard-image.py --title "My Note" --label "screenshot.p
 | Table | `<object><table>` | See below |
 
 ### Table Example
+
 ```html
 <object><table><tbody><tr><td>A</td><td>B</td></tr><tr><td>1</td><td>2</td></tr></tbody></table></object>
 ```

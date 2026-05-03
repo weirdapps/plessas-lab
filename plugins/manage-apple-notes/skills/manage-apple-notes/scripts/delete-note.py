@@ -8,6 +8,7 @@ Arguments:
 Usage:
     python delete-note.py --title "My Note"
 """
+
 import argparse
 import subprocess
 
@@ -18,7 +19,7 @@ parser.add_argument("--title", required=True, help="Note title to delete")
 args = parser.parse_args()
 
 # Untrusted input is passed via osascript argv, never interpolated into the script source.
-script = '''
+script = """
 on run argv
     set folderName to item 1 of argv
     set theTitle to item 2 of argv
@@ -34,10 +35,9 @@ on run argv
         end try
     end tell
 end run
-'''
+"""
 
 result = subprocess.run(
-    ["osascript", "-e", script, FOLDER, args.title],
-    capture_output=True, text=True
+    ["osascript", "-e", script, FOLDER, args.title], capture_output=True, text=True
 )
 print(result.stdout.strip())

@@ -4,6 +4,8 @@ argument-hint: "[operation: list|create|read|delete] [title] [content]"
 allowed-tools: Skill(manage-apple-notes), Bash
 ---
 
+# Apple Notes Command
+
 <objective>
 Execute Apple Notes operations via the manage-apple-notes skill for: $ARGUMENTS
 
@@ -38,6 +40,7 @@ back to them. Do not delete based on inferred intent from prior turns.
 </destructive_operations>
 
 <success_criteria>
+
 - Operation completed successfully
 - Clear feedback provided to user
 - For create: Note visible in Apple Notes app

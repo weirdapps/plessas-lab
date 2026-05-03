@@ -14,6 +14,7 @@ Usage:
     <div>Content here</div>
     EOF
 """
+
 import argparse
 import subprocess
 import sys
@@ -27,12 +28,12 @@ args = parser.parse_args()
 body = sys.stdin.read().strip()
 
 # Remove common shell escape artifacts (like \! from bash history expansion)
-body = body.replace('\\!', '!')
+body = body.replace("\\!", "!")
 
 # Untrusted input is passed via osascript argv, NOT interpolated into the script source.
 # This prevents an AppleScript injection where a crafted title/body could escape the
 # quoted string and run `do shell script`.
-script = '''
+script = """
 on run argv
     set folderName to item 1 of argv
     set theTitle to item 2 of argv
@@ -45,10 +46,9 @@ on run argv
         return "Created: " & theTitle
     end tell
 end run
-'''
+"""
 
 result = subprocess.run(
-    ["osascript", "-e", script, FOLDER, args.title, body],
-    capture_output=True, text=True
+    ["osascript", "-e", script, FOLDER, args.title, body], capture_output=True, text=True
 )
 print(result.stdout.strip() if result.returncode == 0 else f"Error: {result.stderr}")

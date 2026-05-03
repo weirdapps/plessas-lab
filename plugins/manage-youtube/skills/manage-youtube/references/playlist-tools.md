@@ -20,6 +20,7 @@ Playlist Tools provides full CRUD operations on YouTube custom playlists using t
 ## When to Use Which
 
 **Use Third-Party Tools (channel-info, search, transcript, etc.) for:**
+
 - Public content discovery
 - Channel information
 - Video transcripts
@@ -27,6 +28,7 @@ Playlist Tools provides full CRUD operations on YouTube custom playlists using t
 - No authentication needed scenarios
 
 **Use Playlist Tools for:**
+
 - Managing your own playlists
 - Creating/deleting playlists
 - Adding/removing videos from playlists
@@ -224,6 +226,7 @@ npx tsx playlist-manage.ts videos PLxxxxxxxx --json > playlist-videos.json
 **Default daily quota:** 10,000 units
 
 **Best practices:**
+
 - Use local cache (`playlist-sync.ts local`) for reads when possible
 - Batch operations carefully
 - Monitor quota in Google Cloud Console
@@ -289,6 +292,7 @@ The playlist-tools can be combined with the video organization system:
 4. **Organize** using thematics and topics
 
 Example workflow:
+
 ```bash
 # Sync YouTube playlists
 npx tsx playlist-sync.ts all

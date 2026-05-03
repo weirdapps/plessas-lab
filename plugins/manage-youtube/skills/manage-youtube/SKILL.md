@@ -30,6 +30,7 @@ Enable Claude Code to interact with YouTube programmatically using prebuilt Type
 **Tools location**: `./tools/`
 
 **Data storage**: `~/.google-skills/youtube/`
+
 - `favorite-channels.json` - Stored favorite channels list
 - `saved-videos.json` - Saved videos with topics and thematics
 - `reports/` - Video content reports (markdown files)
@@ -39,12 +40,14 @@ Enable Claude Code to interact with YouTube programmatically using prebuilt Type
 - `playlists-cache.json` - Local playlist cache (auto-created by playlist tools)
 
 **Setup for Content Discovery Tools** (no auth required):
+
 ```bash
 cd ./tools
 npm install
 ```
 
 **Setup for Playlist Management Tools** (OAuth required):
+
 ```bash
 # Install dependencies
 cd ./tools/playlist-tools
@@ -62,6 +65,7 @@ npx tsx ./tools/playlist-auth.ts login
 | Playlist Management (playlist-*) | OAuth 2.0 | Yes | 10,000 units/day |
 
 **Libraries used**:
+
 - `youtubei.js` - Full YouTube access via InnerTube API (content discovery)
 - `youtube-sr` - Lightweight search fallback (content discovery)
 - `youtube-caption-extractor` - Transcript extraction (content discovery)
@@ -70,42 +74,49 @@ npx tsx ./tools/playlist-auth.ts login
 
 <quick_start>
 **Get channel information**:
+
 ```bash
 npx tsx ./tools/channel-info.ts \
   --channel "@GoogleDevelopers" --json
 ```
 
 **Get recent videos from a channel**:
+
 ```bash
 npx tsx ./tools/channel-videos.ts \
   --channel "@GoogleDevelopers" --limit 5 --json
 ```
 
 **Get recent videos from multiple channels**:
+
 ```bash
 npx tsx ./tools/channel-videos.ts \
   --channels "@GoogleDevelopers,@indydevdan,@matthew_berman" --limit 3 --json
 ```
 
 **Search YouTube**:
+
 ```bash
 npx tsx ./tools/search.ts \
   --query "typescript tutorial 2025" --limit 10 --json
 ```
 
 **Get video transcript**:
+
 ```bash
 npx tsx ./tools/transcript.ts \
   --video "dQw4w9WgXcQ" --text-only
 ```
 
 **Get video details**:
+
 ```bash
 npx tsx ./tools/video-details.ts \
   --video "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --json
 ```
 
 **Manage favorite channels**:
+
 ```bash
 # Add channels to favorites
 npx tsx ./tools/favorites.ts \
@@ -116,6 +127,7 @@ npx tsx ./tools/favorites.ts --action list --json
 ```
 
 **Manage YouTube playlists** (requires OAuth):
+
 ```bash
 # Authenticate first (one-time)
 npx tsx ./tools/playlist-auth.ts login
@@ -134,6 +146,7 @@ npx tsx ./tools/playlist-manage.ts \
 # Sync all playlists locally
 npx tsx ./tools/playlist-sync.ts all
 ```
+
 </quick_start>
 
 <prebuilt_tools>
@@ -176,6 +189,7 @@ npx tsx ./tools/playlist-sync.ts all
 | `video-library-client.ts` | Shared client for video organization |
 
 **Tool characteristics:**
+
 - Content discovery tools accept channel handles (@username), URLs, or channel IDs
 - All tools support `--json` flag for structured output
 - All tools support `--help` flag for usage information
@@ -191,11 +205,13 @@ npx tsx channel-info.ts --channel "@GoogleDevelopers"
 ```
 
 **Get channel info (detailed with About tab data)**:
+
 ```bash
 npx tsx channel-info.ts --channel "UC_x5XG1OV2P6uZZ5FSM9Ttw" --detailed --json
 ```
 
 **Channel identifier formats** (all work for any tool):
+
 - Handle: `@GoogleDevelopers`
 - Plain handle: `GoogleDevelopers`
 - URL: `https://www.youtube.com/@GoogleDevelopers`
@@ -204,47 +220,56 @@ npx tsx channel-info.ts --channel "UC_x5XG1OV2P6uZZ5FSM9Ttw" --detailed --json
 
 <video_retrieval>
 **Get N most recent videos from a single channel**:
+
 ```bash
 npx tsx channel-videos.ts --channel "@GoogleDevelopers" --limit 10 --json
 ```
 
 **Get videos from multiple channels** (aggregated, sorted by date):
+
 ```bash
 npx tsx channel-videos.ts --channels "@GoogleDevelopers,@indydevdan,@matthew_berman" --limit 5 --json
 ```
 
 **Get videos from last N days**:
+
 ```bash
 npx tsx channel-videos.ts --channel "@GoogleDevelopers" --after-days 7 --json
 ```
 
 **Get videos from last N days across multiple channels**:
+
 ```bash
 npx tsx channel-videos.ts --channels "@channel1,@channel2" --after-days 7 --json
 ```
 
 **Get N most popular videos**:
+
 ```bash
 npx tsx channel-videos.ts --channel "@GoogleDevelopers" --popular 5 --json
 ```
 
 **Get N most popular videos across multiple channels**:
+
 ```bash
 npx tsx channel-videos.ts --channels "@channel1,@channel2" --popular 10 --json
 ```
 
 **Search within a channel**:
+
 ```bash
 npx tsx channel-search.ts --channel "@GoogleDevelopers" --query "kubernetes" --limit 10 --json
 ```
 
 **Multi-channel output includes channel info**:
 When using `--channels`, each video includes:
+
 - `channelId` - The channel's YouTube ID
 - `channelHandle` - The channel's @handle
 - `channelName` - The channel's display name
 
 **Options for channel-videos.ts**:
+
 | Flag | Description |
 |------|-------------|
 | `--channel <id>` | Single channel (handle, URL, or ID) |
@@ -258,11 +283,13 @@ When using `--channels`, each video includes:
 
 <search_operations>
 **Basic search**:
+
 ```bash
 npx tsx search.ts --query "react tutorial" --limit 10 --json
 ```
 
 **Search with filters**:
+
 ```bash
 npx tsx search.ts --query "python course" \
   --upload-date week \
@@ -272,6 +299,7 @@ npx tsx search.ts --query "python course" \
 ```
 
 **Search filter options**:
+
 - `--type`: video, channel, playlist
 - `--upload-date`: hour, today, week, month, year
 - `--duration`: short (<4min), medium (4-20min), long (>20min)
@@ -280,43 +308,52 @@ npx tsx search.ts --query "python course" \
 
 <transcript_operations>
 **Get transcript as plain text**:
+
 ```bash
 npx tsx transcript.ts --video "dQw4w9WgXcQ" --text-only
 ```
 
 **Get transcript with timestamps**:
+
 ```bash
 npx tsx transcript.ts --video "dQw4w9WgXcQ" --with-timestamps
 ```
 
 **Get transcript with video details**:
+
 ```bash
 npx tsx transcript.ts --video "dQw4w9WgXcQ" --with-details --json
 ```
 
 **Search transcript for keywords**:
+
 ```bash
 npx tsx transcript.ts --video "dQw4w9WgXcQ" --search "never,gonna,give" --json
 ```
 
 **Specify language**:
+
 ```bash
 npx tsx transcript.ts --video "dQw4w9WgXcQ" --lang es --text-only
 ```
+
 </transcript_operations>
 
 <video_details>
 **Get video details**:
+
 ```bash
 npx tsx video-details.ts --video "dQw4w9WgXcQ" --json
 ```
 
 **Get video details with related videos**:
+
 ```bash
 npx tsx video-details.ts --video "dQw4w9WgXcQ" --related 5 --json
 ```
 
 **Video URL formats supported**:
+
 - Full URL: `https://www.youtube.com/watch?v=dQw4w9WgXcQ`
 - Short URL: `https://youtu.be/dQw4w9WgXcQ`
 - Embed URL: `https://www.youtube.com/embed/dQw4w9WgXcQ`
@@ -326,11 +363,13 @@ npx tsx video-details.ts --video "dQw4w9WgXcQ" --related 5 --json
 
 <favorites_management>
 **List all favorite channels**:
+
 ```bash
 npx tsx favorites.ts --action list --json
 ```
 
 **Add channels to favorites** (supports multiple, comma-separated):
+
 ```bash
 # Basic add (just resolves IDs)
 npx tsx favorites.ts --action add --channels "@GoogleDevelopers,@freeCodeCamp"
@@ -340,16 +379,19 @@ npx tsx favorites.ts --action add --channels "@GoogleDevelopers,fireship" --reso
 ```
 
 **Remove channels from favorites** (supports multiple):
+
 ```bash
 npx tsx favorites.ts --action remove --channels "@GoogleDevelopers,freeCodeCamp"
 ```
 
 **Get a specific favorite channel**:
+
 ```bash
 npx tsx favorites.ts --action get --channel "@GoogleDevelopers" --json
 ```
 
 **Clear all favorites**:
+
 ```bash
 npx tsx favorites.ts --action clear
 ```
@@ -357,6 +399,7 @@ npx tsx favorites.ts --action clear
 **Favorites data location**: `~/.google-skills/youtube/favorite-channels.json`
 
 **Stored data per channel**:
+
 - Channel ID, handle, name
 - Subscriber count, video count (if --resolve used)
 - Description snippet, thumbnail URL
@@ -365,6 +408,7 @@ npx tsx favorites.ts --action clear
 
 <video_organization>
 **Video Organization Hierarchy**:
+
 ```
 Thematic (broad category, e.g., "AI & Machine Learning")
 ├── Topic (label, e.g., "LangChain Tutorials")
@@ -382,6 +426,7 @@ Uncategorized Videos (videos without topics)
 ```
 
 **Create thematics and topics**:
+
 ```bash
 # Create a thematic (broad category)
 npx tsx video-thematics.ts add "AI & Machine Learning" \
@@ -396,6 +441,7 @@ npx tsx video-topics.ts add "Watch Later"
 ```
 
 **Save videos with topics**:
+
 ```bash
 # Save video with topic and priority (--resolve fetches metadata)
 npx tsx saved-videos.ts add "https://youtu.be/abc123" \
@@ -414,6 +460,7 @@ npx tsx saved-videos.ts update abc123 \
 ```
 
 **Browse and filter videos**:
+
 ```bash
 # List all videos sorted by priority
 npx tsx saved-videos.ts list --sort priority
@@ -432,6 +479,7 @@ npx tsx saved-videos.ts search "tutorial"
 ```
 
 **Manage organization structure**:
+
 ```bash
 # List thematics with topics and counts
 npx tsx video-thematics.ts list --with-topics --with-counts
@@ -453,6 +501,7 @@ npx tsx video-thematics.ts get "AI & Machine Learning" --with-topics --with-vide
 ```
 
 **Cascade behavior on delete**:
+
 - Deleting a **topic** removes it from videos (videos retain other topics)
 - Deleting a **thematic** makes its topics uncategorized
 - Videos are never automatically deleted
@@ -475,12 +524,14 @@ npx tsx video-thematics.ts get "AI & Machine Learning" --with-topics --with-vide
 **Reports Management**
 
 Reports are detailed content analyses stored as markdown files. They can be:
+
 - Linked to saved videos (stored in video's `reportPath` field)
 - Standalone reports (not linked to any saved video)
 
 **Reports storage**: `~/.google-skills/youtube/reports/`
 
 **Create a report for a video**:
+
 ```bash
 # Create report from a file and link to saved video
 npx tsx video-reports.ts create "Video Analysis Report" report.md \
@@ -491,16 +542,19 @@ cat report.md | npx tsx video-reports.ts create "My Report" - --video "abc123" -
 ```
 
 **Create a standalone report** (not linked to any video):
+
 ```bash
 npx tsx video-reports.ts create "Research Notes" notes.md
 ```
 
 **List all reports**:
+
 ```bash
 npx tsx video-reports.ts list --json
 ```
 
 **Get report metadata or content**:
+
 ```bash
 # Get metadata by video ID
 npx tsx video-reports.ts get "zuJyJP517Uw" --json
@@ -510,6 +564,7 @@ npx tsx video-reports.ts get "zuJyJP517Uw" --content
 ```
 
 **Link/unlink reports**:
+
 ```bash
 # Link existing report to a saved video
 npx tsx video-reports.ts link "report-filename.md" "zuJyJP517Uw"
@@ -519,9 +574,11 @@ npx tsx video-reports.ts unlink "zuJyJP517Uw"
 ```
 
 **Remove a report**:
+
 ```bash
 npx tsx video-reports.ts remove "zuJyJP517Uw"
 ```
+
 </video_reports>
 
 <playlist_management>
@@ -530,6 +587,7 @@ npx tsx video-reports.ts remove "zuJyJP517Uw"
 These tools use the official YouTube Data API v3 and require OAuth authentication.
 
 **First-Time Setup:**
+
 ```bash
 # Install playlist-tools dependencies (one-time)
 cd ./tools/playlist-tools
@@ -540,6 +598,7 @@ npx tsx ./tools/playlist-auth.ts login
 ```
 
 **Authentication Operations:**
+
 ```bash
 # Check authentication status
 npx tsx playlist-auth.ts status
@@ -555,6 +614,7 @@ npx tsx playlist-auth.ts paths
 ```
 
 **Playlist CRUD Operations:**
+
 ```bash
 # List all your playlists
 npx tsx playlist-manage.ts list
@@ -577,6 +637,7 @@ npx tsx playlist-manage.ts delete PLxxxxxxxx --confirm
 ```
 
 **Playlist Item Operations:**
+
 ```bash
 # List videos in a playlist
 npx tsx playlist-manage.ts videos PLxxxxxxxx
@@ -593,6 +654,7 @@ npx tsx playlist-manage.ts remove-video PLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 **Sync and Cache Operations:**
+
 ```bash
 # Sync all playlists to local cache
 npx tsx playlist-sync.ts all
@@ -623,6 +685,7 @@ npx tsx playlist-sync.ts clear --confirm
 **Privacy Options:** `public`, `private`, `unlisted`
 
 **Data locations:**
+
 - Tokens: `~/.google-skills/youtube/youtube-tokens.json`
 - Cache: `~/.google-skills/youtube/playlists-cache.json`
 
@@ -632,6 +695,7 @@ npx tsx playlist-sync.ts clear --confirm
 
 <common_patterns>
 **Get latest video and transcribe it**:
+
 ```bash
 # Get most recent video
 VIDEO=$(npx tsx channel-videos.ts --channel "@GoogleDevelopers" --limit 1 --json | jq -r '.[0].id')
@@ -641,6 +705,7 @@ npx tsx transcript.ts --video "$VIDEO" --with-details --json
 ```
 
 **Search and analyze results**:
+
 ```bash
 # Search for videos
 npx tsx search.ts --query "AI coding assistant" --upload-date week --limit 5 --json > results.json
@@ -652,12 +717,14 @@ done
 ```
 
 **Monitor channel for new content**:
+
 ```bash
 # Get videos from last 24 hours
 npx tsx channel-videos.ts --channel "@GoogleDevelopers" --after-days 1 --json
 ```
 
 **Get recent videos from all favorite channels**:
+
 ```bash
 # Method 1: Use --channels with favorites list (recommended - single call, sorted by date)
 HANDLES=$(npx tsx favorites.ts --action list --json | jq -r '.channels[].handle' | tr '\n' ',' | sed 's/,$//')
@@ -671,12 +738,14 @@ done
 ```
 
 **Add multiple channels from a file**:
+
 ```bash
 # channels.txt contains one handle per line
 cat channels.txt | tr '\n' ',' | xargs -I {} npx tsx favorites.ts --action add --channels "{}" --resolve
 ```
 
 **Save video while watching and organize later**:
+
 ```bash
 # Quick save without topic
 npx tsx saved-videos.ts add "dQw4w9WgXcQ" --resolve
@@ -688,6 +757,7 @@ npx tsx saved-videos.ts update "dQw4w9WgXcQ" \
 ```
 
 **Build a curated learning playlist by priority**:
+
 ```bash
 # Create structure
 npx tsx video-thematics.ts add "Learning Path"
@@ -703,11 +773,13 @@ npx tsx saved-videos.ts list --topic "Week 1" --sort priority
 ```
 
 **Get high-priority unwatched videos**:
+
 ```bash
 npx tsx saved-videos.ts list --sort priority --json | jq '.[:5]'
 ```
 
 **Filter videos by engagement (using JSON output)**:
+
 ```bash
 # Get most viewed saved videos (using viewCount for accurate sorting)
 npx tsx saved-videos.ts list --json | jq 'sort_by(.viewCount) | reverse | .[:10]'
@@ -723,12 +795,14 @@ npx tsx saved-videos.ts list --json | jq '[.[] | select(.category == "Education"
 ```
 
 **Use keywords for discovery**:
+
 ```bash
 # Find videos with specific keywords
 npx tsx saved-videos.ts list --json | jq '[.[] | select(.keywords | any(. == "tutorial"))]'
 ```
 
 **Backup all YouTube playlists locally**:
+
 ```bash
 # Authenticate if not already done
 npx tsx playlist-auth.ts status || npx tsx playlist-auth.ts login
@@ -741,6 +815,7 @@ npx tsx playlist-manage.ts list --json > ~/my-youtube-playlists.json
 ```
 
 **Create a YouTube playlist from local saved videos**:
+
 ```bash
 # Create the playlist on YouTube
 npx tsx playlist-manage.ts create --title "From Saved Videos" --privacy private
@@ -753,6 +828,7 @@ done
 ```
 
 **Detect and report playlist changes**:
+
 ```bash
 # First sync to establish baseline
 npx tsx playlist-sync.ts all
@@ -765,6 +841,7 @@ npx tsx playlist-sync.ts diff-items PLxxxxxxxx --json
 ```
 
 **Import videos from YouTube playlist to local organization**:
+
 ```bash
 # Get videos from a YouTube playlist and save locally
 npx tsx playlist-manage.ts videos PLxxxxxxxx --json | jq -r '.[].videoId' | while read vid; do
@@ -773,6 +850,7 @@ done
 ```
 
 **Migrate playlist to different privacy setting**:
+
 ```bash
 # Make a private playlist public
 npx tsx playlist-manage.ts update PLxxxxxxxx --privacy public
@@ -780,6 +858,7 @@ npx tsx playlist-manage.ts update PLxxxxxxxx --privacy public
 # Or make it unlisted (accessible only via link)
 npx tsx playlist-manage.ts update PLxxxxxxxx --privacy unlisted
 ```
+
 </common_patterns>
 
 <error_handling>
@@ -808,11 +887,13 @@ npx tsx playlist-manage.ts update PLxxxxxxxx --privacy unlisted
 | Invalid video ID | ID format wrong | Video IDs are exactly 11 characters |
 
 **Rate limiting**:
+
 - Content discovery tools: No built-in rate limiting. Add delays for bulk operations.
 - Playlist tools: Automatic retry with exponential backoff for transient errors. Daily quota limit applies.
 </error_handling>
 
 <anti_patterns>
+
 - **Never run bulk operations without delays** - YouTube may temporarily block rapid requests
 - **Never expect all videos to have transcripts** - Some videos have no captions
 - **Never hardcode video/channel IDs** - Accept as parameters
@@ -821,6 +902,7 @@ npx tsx playlist-manage.ts update PLxxxxxxxx --privacy unlisted
 
 <success_criteria>
 A successful YouTube operation:
+
 - Returns valid JSON when `--json` flag is used
 - Prints `[OK]` status messages to stderr
 - Exit code 0 for success, 1 for errors
@@ -829,6 +911,7 @@ A successful YouTube operation:
 
 <detailed_references>
 For complete implementation details and library documentation, see:
+
 - [SETUP-CREDENTIALS.md](SETUP-CREDENTIALS.md) - First-time credentials setup for playlist management
 - [references/youtube-guide.md](references/youtube-guide.md) - Full YouTube monitoring guide
 - [references/implementation-notes.md](references/implementation-notes.md) - Implementation details and troubleshooting

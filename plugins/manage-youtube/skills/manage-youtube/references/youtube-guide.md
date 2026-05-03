@@ -297,6 +297,7 @@ async function searchPlaylists(query: string) {
 The `youtube-caption-extractor` package is a lightweight, TypeScript-native library for extracting captions and subtitles from YouTube videos. It supports both user-submitted and auto-generated captions with language options.
 
 **Key Features:**
+
 - TypeScript support out of the box
 - Works in Node.js and Edge runtime environments
 - Can fetch video title and description along with subtitles
@@ -1155,6 +1156,7 @@ export class TopicMonitorService {
 ### Resolving Channel Handles
 
 YouTube channels can be identified by:
+
 - **Channel ID**: `UC_x5XG1OV2P6uZZ5FSM9Ttw` (24-character string starting with UC)
 - **Handle**: `@GoogleDevelopers`
 - **URL**: `https://www.youtube.com/@GoogleDevelopers`

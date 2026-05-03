@@ -46,6 +46,7 @@ The tools support multiple channel identifier formats:
 ```
 
 **Resolution logic:**
+
 1. If starts with "UC" and length is 24 → treat as channel ID
 2. Extract handle from URL if present
 3. Prepend "@" if missing
@@ -103,6 +104,7 @@ YouTube returns publish dates as relative strings:
 ### youtubei.js Parser Warnings
 
 The library generates warnings about missing/changed node types:
+
 - `VideoSummaryContentView not found!`
 - `TicketShelf not found!`
 
@@ -179,6 +181,7 @@ interface FavoriteChannel {
 ```
 
 **Lookup methods:**
+
 - Channels can be found by ID, handle (case-insensitive), or name (case-insensitive)
 - The `--resolve` flag fetches full channel metadata when adding (slower but more data)
 
@@ -234,11 +237,13 @@ interface SavedVideo {
 ```
 
 **Cascade behavior:**
+
 - Deleting a topic removes it from all videos' `topicIds`
 - Deleting a thematic sets its topics' `thematicId` to `null`
 - Videos are never automatically deleted
 
 **Lookup methods:**
+
 - Thematics/topics found by UUID or name (case-insensitive)
 - Videos found by YouTube video ID or URL
 
@@ -264,6 +269,7 @@ done
 ```
 
 Recommended delays:
+
 - Between channel operations: 1-2 seconds
 - Between search operations: 2-3 seconds
 - Between transcript extractions: 1-2 seconds
@@ -300,11 +306,13 @@ npx tsx video-thematics.ts --help
 ```
 
 Test with known channels:
+
 - `@GoogleDevelopers` (UC_x5XG1OV2P6uZZ5FSM9Ttw)
 - `@freeCodeCamp` (UC8butISFwT-Wl7EV0hUK0BQ)
 - `@GoogleDevelopers`
 
 Test video for transcripts:
+
 - `dQw4w9WgXcQ` (Rick Astley - Never Gonna Give You Up)
 
 ---

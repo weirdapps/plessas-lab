@@ -7,11 +7,12 @@ Returns note titles, one per line.
 Usage:
     python list-notes.py
 """
+
 import subprocess
 
 FOLDER = "agent-notes"
 
-script = f'''
+script = f"""
 tell application "Notes"
     if not (exists folder "{FOLDER}") then
         make new folder with properties {{name:"{FOLDER}"}}
@@ -22,8 +23,7 @@ tell application "Notes"
     end repeat
     return noteList
 end tell
-'''
+"""
 
 result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
 print(result.stdout.strip() or "No notes found.")
-

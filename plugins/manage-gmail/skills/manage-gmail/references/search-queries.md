@@ -53,6 +53,7 @@
 | `older_than:` | Messages older than relative time | `older_than:30d` |
 
 **Relative time units:**
+
 - `d` = days (e.g., `7d` = 7 days)
 - `m` = months (e.g., `1m` = 1 month)
 - `y` = years (e.g., `1y` = 1 year)
@@ -66,6 +67,7 @@
 | `size:` | Messages of exact size | `size:102400` |
 
 **Size units:**
+
 - No unit = bytes
 - `K` = kilobytes
 - `M` = megabytes
@@ -90,49 +92,58 @@
 ## Combined Examples
 
 **Unread emails from boss in last week:**
-```
+
+```text
 from:boss@company.com is:unread newer_than:7d
 ```
 
 **PDF attachments larger than 2MB:**
-```
+
+```text
 has:attachment filename:pdf larger:2M
 ```
 
 **Important emails not in inbox (archived):**
-```
+
+```text
 is:important -in:inbox
 ```
 
 **Meeting emails from last month:**
-```
+
+```text
 subject:meeting newer_than:30d older_than:7d
 ```
 
 **Emails from specific domain with attachments:**
-```
+
+```text
 from:@company.com has:attachment
 ```
 
 **Unread starred emails in inbox:**
-```
+
+```text
 is:unread is:starred in:inbox
 ```
 
 **Emails to me or CC'd to me:**
-```
+
+```text
 to:me OR cc:me
 ```
 
 **Exclude newsletters and promotions:**
-```
+
+```text
 -label:promotions -label:social -from:noreply
 ```
 
 ## Attachment-Specific Searches
 
 **Find emails with specific file types:**
-```
+
+```text
 # PDF files
 has:attachment filename:pdf
 
@@ -150,7 +161,8 @@ has:attachment filename:zip OR has:attachment filename:rar
 ```
 
 **Find large attachments:**
-```
+
+```text
 # Files larger than 10MB
 has:attachment larger:10M
 
@@ -159,7 +171,8 @@ has:attachment larger:5M smaller:25M
 ```
 
 **Find recent emails with attachments:**
-```
+
+```text
 # Attachments from last week
 has:attachment newer_than:7d
 

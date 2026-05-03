@@ -17,13 +17,14 @@ Rules for the infographics creation
 2. Do not create fancy representations. Keep them informative and interesting.
 3. Keep everything clean, modern, and impressive.
 4. Use Accent color: #007b85(only for highlights, lines, and design details)
-5. Keep the background either White (#FFFFFF) or Transparent 
+5. Keep the background either White (#FFFFFF) or Transparent
 6. Use Roboto font for the text.
 7. Follow these constraints exactly, but feel free to design the content creatively.
 8. Unless asked differently by the user, the infographic must be landscape.
 </process>
 
 <success_criteria>
+
 - Command executed successfully
 - Clear output shown to user
 </success_criteria>

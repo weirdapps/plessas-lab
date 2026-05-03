@@ -43,9 +43,11 @@ When you run any Gmail operation for the first time, the following will happen:
 1. **Browser Window Opens**: A browser window will automatically open for OAuth consent
 2. **Grant Permissions**: Sign in to your Google account and grant the requested permissions
 3. **Token Created**: After authorization, a token file is automatically created at:
+
    ```
    ~/.google-skills/gmail/gmail_token.json
    ```
+
 4. **Ready to Use**: Subsequent operations will use the stored token automatically
 
 ## File Summary

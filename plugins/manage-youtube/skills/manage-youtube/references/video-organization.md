@@ -102,6 +102,7 @@ Videos can be assigned to multiple topics, and both topics and videos can exist 
 Manages thematics (broad categories).
 
 **Actions**:
+
 | Action | Description |
 |--------|-------------|
 | `list` | List all thematics |
@@ -111,6 +112,7 @@ Manages thematics (broad categories).
 | `get <id\|name>` | Get thematic details |
 
 **Options**:
+
 - `--description "text"` - Set/update description
 - `--name <new-name>` - New name for rename
 - `--with-topics` - Include topics in output
@@ -123,6 +125,7 @@ Manages thematics (broad categories).
 Manages topics (labels for videos).
 
 **Actions**:
+
 | Action | Description |
 |--------|-------------|
 | `list` | List all topics |
@@ -133,6 +136,7 @@ Manages topics (labels for videos).
 | `get <id\|name>` | Get topic details |
 
 **Options**:
+
 - `--thematic <id\|name>` - Assign/filter by thematic
 - `--uncategorized` - Show only uncategorized topics
 - `--name <new-name>` - New name for rename
@@ -145,6 +149,7 @@ Manages topics (labels for videos).
 Manages saved videos.
 
 **Actions**:
+
 | Action | Description |
 |--------|-------------|
 | `list` | List saved videos |
@@ -155,6 +160,7 @@ Manages saved videos.
 | `search <query>` | Search saved videos |
 
 **Options**:
+
 - `--topic <id\|name>` - Filter by or assign to topic (repeatable)
 - `--thematic <id\|name>` - Filter by thematic
 - `--unassigned` - Show only uncategorized videos
@@ -227,10 +233,12 @@ npx tsx saved-videos.ts list --json | jq '[.[] | select(.keywords | any(. == "tu
 ## Lookup Behavior
 
 Both topics and thematics can be referenced by:
+
 - **UUID** - Exact match
 - **Name** - Case-insensitive match
 
 Videos can be referenced by:
+
 - **Video ID** - 11-character YouTube video ID
 - **URL** - Any YouTube URL format (watch, youtu.be, embed, shorts)
 
@@ -239,6 +247,7 @@ Videos can be referenced by:
 The `video-library-client.ts` provides:
 
 ### Interfaces
+
 - `VideoMetadata` - Extensible metadata object
 - `SavedVideo` - Video entity
 - `Topic` - Topic entity
@@ -246,6 +255,7 @@ The `video-library-client.ts` provides:
 - `SavedVideosData` - Root data structure
 
 ### Functions
+
 - `loadSavedVideosData()` - Load data from file
 - `saveSavedVideosData(data)` - Save data to file
 - `findThematicByIdOrName(data, identifier)` - Lookup thematic

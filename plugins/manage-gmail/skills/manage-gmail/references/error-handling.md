@@ -15,25 +15,31 @@
 ## Authentication Errors
 
 ### Token Expired
+
 **Symptom**: 401 error after previously working
 
 **Solution**:
+
 1. Delete the token file: `rm ~/.google-skills/gmail/gmail_token.json`
 2. Run any Gmail operation again
 3. Complete the OAuth flow in the browser
 
 ### Scope Mismatch
+
 **Symptom**: 403 error when trying to send email
 
 **Solution**:
+
 1. Verify scopes are declared in OAuth Consent Screen (Data Access section)
 2. Delete token file and re-authenticate to request updated scopes
 3. Ensure the scope in code matches the declared scopes
 
 ### Unverified App Warning
+
 **Symptom**: "This app isn't verified" screen during OAuth
 
 **Solution**:
+
 1. For testing: Click "Advanced" > "Go to [app name] (unsafe)"
 2. For production: Submit app for Google verification
 3. Ensure you're using a test user account added in OAuth Consent Screen
@@ -41,10 +47,12 @@
 ## Rate Limiting
 
 ### Default Quotas
+
 - **Per-user rate limit**: 250 quota units per user per second
 - **Daily limit**: 1 billion quota units per day
 
 ### Quota Costs by Operation
+
 | Operation | Quota Units |
 |-----------|-------------|
 | messages.list | 5 |
@@ -92,37 +100,47 @@ const messages = await withRetry(() =>
 ## Common Issues and Solutions
 
 ### "Credentials file not found"
+
 **Cause**: Missing `GMailSkill-Credentials.json` file
 
 **Solution**:
+
 1. Download OAuth credentials from Google Cloud Console
 2. Save to `~/.google-skills/gmail/GMailSkill-Credentials.json`
 
 ### "Access blocked: This app's request is invalid"
+
 **Cause**: Redirect URI mismatch or invalid client configuration
 
 **Solution**:
+
 1. Verify the credentials.json is for a "Desktop app" type
 2. Ensure redirect URIs include `http://localhost`
 
 ### "Request had insufficient authentication scopes"
+
 **Cause**: Token was created with fewer scopes than needed
 
 **Solution**:
+
 1. Delete the token file
 2. Update the SCOPES array in the code
 3. Re-authenticate to get a new token with the required scopes
 
 ### Empty message body
+
 **Cause**: Message format not set to 'full' or body encoded differently
 
 **Solution**:
+
 1. Use `format: 'full'` when getting messages
 2. Check for both `text/plain` and `text/html` MIME types
 3. Handle multipart messages recursively
 
 ### Thread ID vs Message ID confusion
+
 **Note**:
+
 - `messageId`: Unique identifier for a single message
 - `threadId`: Identifier for a conversation (shared by all messages in thread)
 
@@ -131,14 +149,17 @@ Always verify you're using the correct ID type for each operation.
 ## Attachment Errors
 
 ### "Attachment file not found"
+
 **Cause**: The specified file path does not exist
 
 **Solution**:
+
 1. Verify the file path is correct
 2. Use absolute paths or `~` for home directory
 3. Check file permissions
 
 **Example**:
+
 ```bash
 # These path formats are supported:
 --attachments "/absolute/path/to/file.pdf"
@@ -147,9 +168,11 @@ Always verify you're using the correct ID type for each operation.
 ```
 
 ### "Attachment too large"
+
 **Cause**: File exceeds Gmail's 25MB attachment limit
 
 **Solution**:
+
 1. Compress the file before attaching
 2. Use Google Drive and share a link instead
 3. Split large files into smaller parts
@@ -157,17 +180,21 @@ Always verify you're using the correct ID type for each operation.
 **Note**: The 25MB limit applies to each individual file, not the total message size.
 
 ### "Permission denied" reading attachment
+
 **Cause**: Insufficient permissions to read the file
 
 **Solution**:
+
 1. Check file permissions: `ls -la /path/to/file`
 2. Ensure the file is readable by the current user
 3. Run `chmod +r /path/to/file` if needed
 
 ### Unsupported file type warning
+
 **Note**: Files with unrecognized extensions are sent with `application/octet-stream` MIME type. This is not an error - the file will still be attached successfully.
 
 **Supported MIME types** (automatically detected):
+
 - Documents: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, MD
 - Images: PNG, JPG, JPEG, GIF, SVG, WEBP
 - Archives: ZIP, GZ, TAR, RAR, 7Z
@@ -175,9 +202,11 @@ Always verify you're using the correct ID type for each operation.
 - Media: MP3, MP4, WAV, AVI, MOV
 
 ### Multiple attachment issues
+
 **Cause**: Incorrect format for multiple attachments
 
 **Solution**: Use comma-separated paths without spaces after commas:
+
 ```bash
 # Correct
 --attachments "/path/file1.pdf,/path/file2.docx"

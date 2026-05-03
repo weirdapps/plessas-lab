@@ -31,6 +31,7 @@
 ## Operations by Scope
 
 ### `gmail.readonly`
+
 - List messages
 - Get message content
 - List threads
@@ -40,12 +41,14 @@
 - Get label details
 
 ### `gmail.send`
+
 - Send messages (with or without attachments)
 - Reply to messages (with or without attachments)
 - Forward messages (with or without attachments)
 - Everything in `gmail.readonly`
 
 ### `gmail.compose`
+
 - Create drafts (with or without attachments)
 - Update drafts
 - Delete drafts
@@ -53,6 +56,7 @@
 - Everything in `gmail.send`
 
 ### `gmail.modify`
+
 - Modify message labels
 - Trash/untrash messages
 - Mark as read/unread
@@ -60,6 +64,7 @@
 - Everything in `gmail.compose`
 
 ### `gmail.labels`
+
 - Create labels
 - Update labels
 - Delete labels
@@ -85,11 +90,13 @@
 When you need different scopes than what the current token has:
 
 1. Delete the token file:
+
    ```bash
    rm ~/.google-skills/gmail/gmail_token.json
    ```
 
 2. Update the SCOPES array in the TypeScript code:
+
    ```typescript
    const SCOPES = [
      'https://www.googleapis.com/auth/gmail.readonly',
@@ -99,6 +106,7 @@ When you need different scopes than what the current token has:
    ```
 
 3. Rebuild the TypeScript code:
+
    ```bash
    cd ./scripts && npm run build
    ```
@@ -110,11 +118,13 @@ When you need different scopes than what the current token has:
 ## Scope Verification Status
 
 For **External apps** (personal Gmail, public apps):
+
 - Scopes declared in code MUST match OAuth Consent Screen
 - Sensitive scopes require additional verification by Google
 - Restricted scopes require security assessment
 
 For **Internal apps** (Google Workspace only):
+
 - Scopes are not enforced in consent screen
 - No Google verification required
 - Only organization users can access

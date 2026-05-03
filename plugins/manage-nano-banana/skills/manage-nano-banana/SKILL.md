@@ -13,6 +13,7 @@ Enable Claude Code to create, edit, and generate visual content using Google's N
 **API Authentication**: Uses the `GEMINI_API_KEY` environment variable.
 
 **Available Models**:
+
 - `gemini-2.5-flash-image` - Fast, efficient, ~$0.039/image, 1K resolution
 - `gemini-3-pro-image-preview` - High quality, up to 4K, advanced text rendering, up to 14 reference images
 
@@ -54,6 +55,7 @@ npx tsx ./tools/generate-diagram.ts \
   --prompt "Microservices architecture with API Gateway, User Service, and Database" \
   --output ./architecture.png
 ```
+
 </quick_start>
 
 <workflows>
@@ -72,6 +74,7 @@ npx tsx ./tools/generate-image.ts \
 ```
 
 **Options**:
+
 - `--prompt` (required): Text description of the image
 - `--output` (required): Output file path
 - `--model`: `gemini-2.5-flash-image` (default) or `gemini-3-pro-image-preview`
@@ -93,12 +96,14 @@ npx tsx ./tools/edit-image.ts \
 ```
 
 **Options**:
+
 - `--input` (required): Source image path
 - `--prompt` (required): Editing instructions
 - `--output` (required): Output file path
 - `--model`: Model to use (default: `gemini-2.5-flash-image`)
 
 **Best Practices**:
+
 - Be specific about what to change and what to preserve
 - Reference specific elements: "change only the blue sofa"
 - Mention preservation: "keep the rest of the room unchanged"
@@ -119,6 +124,7 @@ npx tsx ./tools/generate-diagram.ts \
 ```
 
 **Diagram Types** (`--type`):
+
 - `architecture` - System architecture diagrams
 - `flowchart` - Process flowcharts and decision trees
 - `erd` - Entity-relationship diagrams
@@ -129,6 +135,7 @@ npx tsx ./tools/generate-diagram.ts \
 - `custom` - Free-form diagram (uses prompt as-is)
 
 **Options**:
+
 - `--type` (required): Diagram type
 - `--prompt` (required): Description of the diagram content
 - `--output` (required): Output file path
@@ -149,6 +156,7 @@ npx tsx ./tools/generate-diagram.ts \
 | `nano-banana-client.ts` | Shared client library |
 
 All tools:
+
 - Read `GEMINI_API_KEY` from environment (no fallback - throws if missing)
 - Support both models
 - Include proper error handling
@@ -157,23 +165,27 @@ All tools:
 
 <prompting_best_practices>
 **For Images**:
+
 - Be specific about subject, style, colors, mood
 - Include artistic style references: "watercolor", "photorealistic", "minimalist"
 - Specify composition: "centered", "rule of thirds", "close-up"
 
 **For Diagrams**:
+
 - List all components explicitly
 - Describe connections and relationships
 - Specify visual requirements: icons, colors, labels
 - Include standard notation where applicable (UML, crow's foot, etc.)
 
 **For Editing**:
+
 - Clearly identify what to change
 - Explicitly state what should remain unchanged
 - Describe the desired result in detail
 </prompting_best_practices>
 
 <anti_patterns>
+
 - **Missing API key**: Never provide fallback values. The tools will throw if `GEMINI_API_KEY` is not set.
 - **Wrong resolution for model**: Don't use `2K` or `4K` with `gemini-2.5-flash-image` (1K max)
 - **Vague editing prompts**: "Make it better" won't work. Be specific: "Change the color to blue"
@@ -181,12 +193,14 @@ All tools:
 </anti_patterns>
 
 <success_criteria>
+
 - Generated image saved to the specified output path
 - File size is non-zero (typically 50KB-500KB+)
 - Tool exits with code 0
 - No API errors in output
 
 **Verification**:
+
 ```bash
 # Check file was created
 ls -la ./output.png
@@ -194,10 +208,12 @@ ls -la ./output.png
 # Use the Read tool to view the generated image
 # Claude Code can display images when read with the Read tool
 ```
+
 </success_criteria>
 
 <detailed_references>
 **API Guide**: See the full Nano Banana API Guide for advanced features:
+
 - Multi-turn editing (chat-based refinement)
 - Multiple reference images for character consistency
 - Image blending techniques

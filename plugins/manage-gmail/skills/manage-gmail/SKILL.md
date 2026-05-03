@@ -42,6 +42,7 @@ Available Gmail API scopes (configured in credentials):
 
 <quick_start>
 <workflow>
+
 1. **Verify credentials exist**: Check `~/.google-skills/gmail/GMailSkill-Credentials.json`
 2. **Run the appropriate command** using the CLI at `./scripts/dist/gmail-operations.js`
 3. **Handle first-time auth**: Browser window opens for OAuth consent
@@ -53,49 +54,59 @@ Available Gmail API scopes (configured in credentials):
 **Node.js Interpreter**: Use the system Node.js (v18+ required)
 
 **List recent messages:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js list --max-results 10
 ```
 
 **Search messages:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js search --query "is:unread newer_than:7d"
 ```
 
 **Read a specific message:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js read --message-id "MESSAGE_ID_HERE"
 ```
 
 **Read a thread:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js thread --thread-id "THREAD_ID_HERE"
 ```
 
 **Send an email:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js send --to "recipient@example.com" --subject "Subject" --body "Message body"
 ```
 
 **Get profile:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js profile
 ```
 
 **List contacts:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js contacts list
 ```
 
 **Search contacts by name:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js contacts search --name "john"
 ```
 
 **Add a contact:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js contacts add --name "John Smith" --email "john@example.com"
 ```
+
 </common_operations>
 </quick_start>
 
@@ -123,6 +134,7 @@ Gmail search query operators (use with `--query` parameter):
 | `""` | Exact phrase | `"project update"` |
 
 **Combined examples:**
+
 - `from:boss@company.com is:unread newer_than:7d` - Unread from boss in last week
 - `has:attachment filename:pdf larger:2M` - PDFs larger than 2MB
 - `subject:meeting newer_than:30d` - Meeting emails from last month
@@ -133,11 +145,13 @@ Gmail search query operators (use with `--query` parameter):
 **Purpose**: List messages matching criteria
 
 **Command:**
+
 ```bash
 node gmail-operations.js list [--query QUERY] [--max-results N] [--label-ids LABELS]
 ```
 
 **Parameters:**
+
 - `--query`, `-q`: Gmail search query (default: empty = all messages)
 - `--max-results`, `-n`: Maximum messages to return (default: 10, max: 500)
 - `--label-ids`: Comma-separated label IDs (e.g., `INBOX,UNREAD`)
@@ -149,11 +163,13 @@ node gmail-operations.js list [--query QUERY] [--max-results N] [--label-ids LAB
 **Purpose**: Read full content of a specific message
 
 **Command:**
+
 ```bash
 node gmail-operations.js read --message-id MESSAGE_ID [--format FORMAT]
 ```
 
 **Parameters:**
+
 - `--message-id`, `-m`: The message ID to read (required)
 - `--format`, `-f`: Output format - `full`, `metadata`, `minimal` (default: full)
 
@@ -164,11 +180,13 @@ node gmail-operations.js read --message-id MESSAGE_ID [--format FORMAT]
 **Purpose**: Read all messages in a conversation thread
 
 **Command:**
+
 ```bash
 node gmail-operations.js thread --thread-id THREAD_ID
 ```
 
 **Parameters:**
+
 - `--thread-id`, `-t`: The thread ID to read (required)
 
 **Output**: JSON array of all messages in the thread with parsed content
@@ -178,11 +196,13 @@ node gmail-operations.js thread --thread-id THREAD_ID
 **Purpose**: Send a new email with optional file attachments
 
 **Command:**
+
 ```bash
 node gmail-operations.js send --to RECIPIENT --subject SUBJECT --body BODY [--cc CC] [--bcc BCC] [--html HTML_BODY] [--attachments FILES]
 ```
 
 **Parameters:**
+
 - `--to`: Recipient email (required, comma-separated for multiple)
 - `--subject`, `-s`: Email subject (required)
 - `--body`, `-b`: Plain text body (required)
@@ -194,11 +214,13 @@ node gmail-operations.js send --to RECIPIENT --subject SUBJECT --body BODY [--cc
 **Output**: JSON object with sent message ID and thread ID
 
 **Example with attachment:**
+
 ```bash
 node gmail-operations.js send --to "user@example.com" --subject "Report" --body "Please find attached." --attachments "/path/to/report.pdf"
 ```
 
 **Multiple attachments:**
+
 ```bash
 node gmail-operations.js send --to "user@example.com" --subject "Files" --body "Multiple files attached." --attachments "/path/file1.pdf,/path/file2.docx"
 ```
@@ -210,11 +232,13 @@ node gmail-operations.js send --to "user@example.com" --subject "Files" --body "
 **Purpose**: Reply to an existing message with optional attachments
 
 **Command:**
+
 ```bash
 node gmail-operations.js reply --message-id MESSAGE_ID --body BODY [--reply-all] [--html HTML_BODY] [--attachments FILES]
 ```
 
 **Parameters:**
+
 - `--message-id`, `-m`: Original message ID to reply to (required)
 - `--body`, `-b`: Reply body text (required)
 - `--reply-all`: Reply to all recipients (optional flag)
@@ -224,6 +248,7 @@ node gmail-operations.js reply --message-id MESSAGE_ID --body BODY [--reply-all]
 **Output**: JSON object with sent reply message ID
 
 **Example with attachment:**
+
 ```bash
 node gmail-operations.js reply --message-id "MSG_ID" --body "Here's the file you requested." --attachments "/path/to/file.pdf"
 ```
@@ -235,11 +260,13 @@ node gmail-operations.js reply --message-id "MSG_ID" --body "Here's the file you
 **Purpose**: Forward a message to new recipients with optional attachments
 
 **Command:**
+
 ```bash
 node gmail-operations.js forward --message-id MESSAGE_ID --to RECIPIENT [--text ADDITIONAL_TEXT] [--cc CC] [--bcc BCC] [--attachments FILES]
 ```
 
 **Parameters:**
+
 - `--message-id`, `-m`: Message ID to forward (required)
 - `--to`: Recipient(s) to forward to (required)
 - `--text`: Additional text to prepend (optional)
@@ -250,6 +277,7 @@ node gmail-operations.js forward --message-id MESSAGE_ID --to RECIPIENT [--text 
 **Output**: JSON object with forwarded message ID
 
 **Example with attachment:**
+
 ```bash
 node gmail-operations.js forward --message-id "MSG_ID" --to "user@example.com" --text "Adding my notes." --attachments "/path/to/notes.pdf"
 ```
@@ -261,11 +289,13 @@ node gmail-operations.js forward --message-id "MSG_ID" --to "user@example.com" -
 **Purpose**: Create a draft email with optional attachments without sending
 
 **Command:**
+
 ```bash
 node gmail-operations.js draft --to RECIPIENT --subject SUBJECT --body BODY [--cc CC] [--html HTML_BODY] [--attachments FILES]
 ```
 
 **Parameters:**
+
 - `--to`: Recipient email (required)
 - `--subject`, `-s`: Email subject (required)
 - `--body`, `-b`: Plain text body (required)
@@ -276,6 +306,7 @@ node gmail-operations.js draft --to RECIPIENT --subject SUBJECT --body BODY [--c
 **Output**: JSON object with draft ID
 
 **Example with attachment:**
+
 ```bash
 node gmail-operations.js draft --to "user@example.com" --subject "Draft with file" --body "Review attached." --attachments "/path/to/doc.pdf"
 ```
@@ -287,6 +318,7 @@ node gmail-operations.js draft --to "user@example.com" --subject "Draft with fil
 **Purpose**: Get authenticated user's email profile
 
 **Command:**
+
 ```bash
 node gmail-operations.js profile
 ```
@@ -298,11 +330,13 @@ node gmail-operations.js profile
 **Purpose**: Move a single message to trash
 
 **Command:**
+
 ```bash
 node gmail-operations.js trash --message-id MESSAGE_ID
 ```
 
 **Parameters:**
+
 - `--message-id`, `-m`: The message ID to trash (required)
 
 **Output**: JSON object with id, threadId, labelIds, and status
@@ -314,24 +348,29 @@ node gmail-operations.js trash --message-id MESSAGE_ID
 **Purpose**: Move multiple messages to trash in a single efficient batch operation
 
 **Command:**
+
 ```bash
 node gmail-operations.js trash-bulk --message-ids "ID1,ID2,ID3,ID4"
 ```
 
 **Parameters:**
+
 - `--message-ids`, `-m`: Comma-separated list of message IDs to trash (required)
 
 **Output**: JSON object with:
+
 - `results`: Array of successfully trashed messages
 - `errors`: Array of any failed operations
 - `summary`: Object with `total`, `trashed`, and `failed` counts
 
 **Example:**
+
 ```bash
 node ./scripts/dist/gmail-operations.js trash-bulk --message-ids "19b68a0697430e5f,19b687ddaf35bf2f,19b68711bef8edad"
 ```
 
 **Notes:**
+
 - Uses Gmail's batchModify API for efficiency (up to 100 messages per batch)
 - Falls back to individual operations if batch fails
 - Much faster than calling trash individually for each message
@@ -343,6 +382,7 @@ node ./scripts/dist/gmail-operations.js trash-bulk --message-ids "19b68a0697430e
 **Purpose**: List all contacts in the registry
 
 **Command:**
+
 ```bash
 node gmail-operations.js contacts list
 ```
@@ -354,16 +394,19 @@ node gmail-operations.js contacts list
 **Purpose**: Search contacts by name using case-insensitive partial matching
 
 **Command:**
+
 ```bash
 node gmail-operations.js contacts search --name QUERY
 ```
 
 **Parameters:**
+
 - `--name`, `-n`: Search query to match against contact names (required)
 
 **Output**: JSON object with query, count, and matching contacts array
 
 **Examples:**
+
 ```bash
 # Find all contacts with "john" in their name
 node gmail-operations.js contacts search --name "john"
@@ -371,69 +414,83 @@ node gmail-operations.js contacts search --name "john"
 # Case-insensitive search
 node gmail-operations.js contacts search --name "SMITH"
 ```
+
 </contacts_search>
 
 <contacts_add>
 **Purpose**: Add a new contact to the registry
 
 **Command:**
+
 ```bash
 node gmail-operations.js contacts add --name NAME --email EMAIL
 ```
 
 **Parameters:**
+
 - `--name`, `-n`: Full name of the contact (required)
 - `--email`, `-e`: Email address (required, must be valid format)
 
 **Output**: JSON object with status and added contact details
 
 **Notes:**
+
 - Duplicate names are not allowed (case-insensitive)
 - Email format is validated before adding
 
 **Example:**
+
 ```bash
 node gmail-operations.js contacts add --name "John Smith" --email "john.smith@example.com"
 ```
+
 </contacts_add>
 
 <contacts_update>
 **Purpose**: Update an existing contact's email address
 
 **Command:**
+
 ```bash
 node gmail-operations.js contacts update --name NAME --email EMAIL
 ```
 
 **Parameters:**
+
 - `--name`, `-n`: Full name of the contact to update (exact match, case-insensitive)
 - `--email`, `-e`: New email address (required)
 
 **Output**: JSON object with status and updated contact details
 
 **Example:**
+
 ```bash
 node gmail-operations.js contacts update --name "John Smith" --email "john.new@example.com"
 ```
+
 </contacts_update>
 
 <contacts_remove>
 **Purpose**: Remove a contact from the registry
 
 **Command:**
+
 ```bash
 node gmail-operations.js contacts remove --name NAME
 ```
 
 **Parameters:**
+
 - `--name`, `-n`: Full name of the contact to remove (exact match, case-insensitive)
 
 **Output**: JSON object with status and removed contact details
 
 **Example:**
+
 ```bash
 node gmail-operations.js contacts remove --name "John Smith"
 ```
+
 </contacts_remove>
 </operations>
 
@@ -453,18 +510,21 @@ The `send`, `reply`, `forward`, and `draft` commands support file attachments vi
 | Media | `.mp3`, `.mp4`, `.wav`, `.avi`, `.mov` |
 
 **Limitations:**
+
 - Maximum attachment size: **25MB** per file (Gmail limit)
 - Files are automatically MIME-typed based on extension
 - Unknown extensions default to `application/octet-stream`
 - Paths can be absolute or use `~` for home directory
 
 **Error handling:**
+
 - File not found: Returns error with file path
 - File too large: Returns error with size information
 - File unreadable: Returns permission error
 </attachments>
 
 <error_handling>
+
 | Error Code | Description | Solution |
 |------------|-------------|----------|
 | 401 | Unauthorized | Delete token.json and re-authenticate |
@@ -476,6 +536,7 @@ The `send`, `reply`, `forward`, and `draft` commands support file attachments vi
 </error_handling>
 
 <security_checklist>
+
 - Never expose or log the credentials.json content
 - Never commit token.json to version control
 - Verify recipient addresses before sending
@@ -484,6 +545,7 @@ The `send`, `reply`, `forward`, and `draft` commands support file attachments vi
 </security_checklist>
 
 <success_criteria>
+
 - Credentials file exists at the expected path
 - Authentication completes successfully (token.json created)
 - Operations return valid JSON output

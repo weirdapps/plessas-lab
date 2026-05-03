@@ -17,6 +17,7 @@ This routes to the specialized skill containing prebuilt TypeScript tools for wo
 </process>
 
 <success_criteria>
+
 - Skill successfully invoked
 - Arguments passed correctly to skill
 - Image or diagram generated at specified location
