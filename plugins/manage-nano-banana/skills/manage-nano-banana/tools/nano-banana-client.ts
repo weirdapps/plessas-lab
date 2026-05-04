@@ -39,9 +39,9 @@ export interface EditImageOptions {
  */
 function getApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!apiKey || apiKey.trim() === '') {
     throw new Error(
-      "GEMINI_API_KEY environment variable is not set. " +
+      "GEMINI_API_KEY environment variable is not set or is empty. " +
       "Please set it before using the Nano Banana API tools."
     );
   }
