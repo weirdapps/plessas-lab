@@ -1,0 +1,18 @@
+{
+  "name": "integrations-marketplace",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "External service integrations (Gmail, YouTube, Apple Notes, Nano Banana)",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "^3.1.0",
+    "@vitest/coverage-v8": "^3.1.0"
+  }
+}
