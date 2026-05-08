@@ -1,0 +1,5 @@
+# Personal data — chats.json + non-example prompts MUST live in
+# ~/.claude/teams-monitor/, never in the repo.
+chats.json
+prompts/*.txt
+!prompts/example_*.txt

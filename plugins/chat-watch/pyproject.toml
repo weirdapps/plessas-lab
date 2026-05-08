@@ -1,0 +1,9 @@
+[project]
+name = "teams-monitor"
+version = "0.1.0"
+description = "Experimental — monitors the 'digital nomads' Teams chat and posts [Claude]-tagged replies"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

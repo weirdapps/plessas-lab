@@ -1,0 +1,19 @@
+{
+  "name": "chat-watch",
+  "description": "Polls one or more Microsoft Teams chats and posts [Claude]-prefixed replies when an LLM gate decides adding context is genuinely useful. Per-chat config (id, prompt template, rate limits, dry-run) lives outside the repo at ~/.claude/teams-monitor/. Requires teams-cli authenticated.",
+  "version": "0.1.0",
+  "author": {
+    "name": "weirdapps"
+  },
+  "license": "MIT",
+  "keywords": [
+    "teams",
+    "microsoft-teams",
+    "monitor",
+    "bot",
+    "claude",
+    "chat",
+    "llm-gate",
+    "rate-limited"
+  ]
+}

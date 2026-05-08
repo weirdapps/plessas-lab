@@ -1,0 +1,29 @@
+{
+  "_comment": "Copy this file to ~/.claude/teams-monitor/chats.json and edit. Personal data (chat IDs, prompts that name colleagues) MUST NOT be checked into the repo.",
+  "_field_docs": {
+    "label": "Short identifier — used for state-<label>.json filename and for --chat <label> CLI arg. Must be unique. Keep it ASCII / filesystem-safe.",
+    "id": "Microsoft Teams chat id (the long '19:...@thread.v2' or '19:...@unq.gbl.spaces' string). Find it via `teams-cli list-chats`.",
+    "prompt_template": "Path to the gating prompt for this chat. Relative paths resolve against the directory containing chats.json (i.e. ~/.claude/teams-monitor/), so 'prompts/foo.txt' means '~/.claude/teams-monitor/prompts/foo.txt'.",
+    "max_replies_per_hour": "Hard cap on replies in a rolling 60-minute window. Suggested: 5 for active group chats, 2 for 1:1s.",
+    "per_thread_cooldown_minutes": "After replying in a 'thread' (in practice, the message id, since group chats lack threading), wait this long before replying to the same id again. Suggested: 10 for groups, 30 for 1:1s.",
+    "dry_run": "If true, log decisions but post nothing. Useful while tuning a new prompt before going live."
+  },
+  "chats": [
+    {
+      "label": "example_group",
+      "id": "19:REPLACE_ME@thread.v2",
+      "prompt_template": "prompts/example_group.txt",
+      "max_replies_per_hour": 5,
+      "per_thread_cooldown_minutes": 10,
+      "dry_run": true
+    },
+    {
+      "label": "example_one_to_one",
+      "id": "19:REPLACE_ME@unq.gbl.spaces",
+      "prompt_template": "prompts/example_one_to_one.txt",
+      "max_replies_per_hour": 2,
+      "per_thread_cooldown_minutes": 30,
+      "dry_run": true
+    }
+  ]
+}
