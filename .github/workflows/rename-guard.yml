@@ -1,0 +1,40 @@
+name: rename-guard
+
+# Catches drift after two renames on 2026-05-09:
+#   integrations-marketplace -> plessas-lab
+#   teams-monitor (plugin) -> chat-watch
+# Runs on push to master and on every PR. Fails CI if old names leak back into tracked files.
+
+"on":
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  no-old-marketplace-name:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for legacy "integrations-marketplace"
+        run: |
+          set -e
+          if git grep -nE 'integrations-marketplace' \
+              -- ':!.github/workflows/rename-guard.yml' ; then
+            echo "::error::Found 'integrations-marketplace' references — rename to 'plessas-lab'."
+            exit 1
+          fi
+          echo "OK — no stale 'integrations-marketplace' references."
+      - name: Grep for legacy "teams-monitor"
+        run: |
+          set -e
+          # The chat-watch plugin migrates ~/.claude/teams-monitor/ -> ~/.claude/chat-watch/
+          # at runtime, so monitor.py is allowed to mention LEGACY_STATE_DIR.
+          # The README documents the migration so it's also exempt.
+          if git grep -nE 'teams-monitor' \
+              -- ':!.github/workflows/rename-guard.yml' \
+                 ':!plugins/chat-watch/monitor.py' \
+                 ':!plugins/chat-watch/README.md' ; then
+            echo "::error::Found 'teams-monitor' references outside the migration-aware files — rename to 'chat-watch'."
+            exit 1
+          fi
+          echo "OK — no stale 'teams-monitor' references in tracked files."
