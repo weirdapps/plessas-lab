@@ -1,5 +1,5 @@
 {
-  "name": "integrations-marketplace",
+  "name": "plessas-lab",
   "owner": {
     "name": "weirdapps"
   },
@@ -71,6 +71,22 @@
         "youtube",
         "api",
         "typescript"
+      ]
+    },
+    {
+      "name": "chat-watch",
+      "source": "./plugins/chat-watch",
+      "description": "Polls MS Teams chats and posts [Claude]-prefixed replies via LLM gate. Per-chat config at ~/.claude/teams-monitor/. Requires teams-cli authenticated.",
+      "version": "0.1.0",
+      "author": {
+        "name": "weirdapps"
+      },
+      "license": "MIT",
+      "keywords": [
+        "teams",
+        "monitor",
+        "chat",
+        "llm-gate"
       ]
     }
   ]

@@ -27,7 +27,7 @@ Clone this marketplace into Claude Code's marketplaces directory; Claude Code wi
 
 ```bash
 mkdir -p ~/.claude/plugins/marketplaces
-git clone https://github.com/weirdapps/integrations-marketplace.git ~/.claude/plugins/marketplaces/integrations-marketplace
+git clone https://github.com/weirdapps/plessas-lab.git ~/.claude/plugins/marketplaces/plessas-lab
 ```
 
 Then enable the plugins you want from the Claude Code plugin manager (`/plugin`).
@@ -35,13 +35,13 @@ Then enable the plugins you want from the Claude Code plugin manager (`/plugin`)
 ### Update
 
 ```bash
-cd ~/.claude/plugins/marketplaces/integrations-marketplace && git pull
+cd ~/.claude/plugins/marketplaces/plessas-lab && git pull
 ```
 
 ## Directory Structure
 
-```
-integrations-marketplace/
+```text
+plessas-lab/
 ├── .claude-plugin/
 │   └── marketplace.json         # Marketplace manifest (lists all plugins)
 ├── plugins/
