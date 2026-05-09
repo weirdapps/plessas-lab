@@ -76,7 +76,7 @@
     {
       "name": "chat-watch",
       "source": "./plugins/chat-watch",
-      "description": "Polls MS Teams chats and posts [Claude]-prefixed replies via LLM gate. Per-chat config at ~/.claude/teams-monitor/. Requires teams-cli authenticated.",
+      "description": "Polls MS Teams chats and posts [Claude]-prefixed replies via LLM gate. Per-chat config at ~/.claude/chat-watch/. Requires teams-cli authenticated.",
       "version": "0.1.0",
       "author": {
         "name": "weirdapps"

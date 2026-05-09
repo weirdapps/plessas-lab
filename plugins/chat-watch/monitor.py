@@ -56,12 +56,48 @@ class ClaudeCliError(Exception):
 
 
 HERE = Path(__file__).resolve().parent
-STATE_DIR = Path("~/.claude/teams-monitor").expanduser()
+STATE_DIR = Path("~/.claude/chat-watch").expanduser()
+LEGACY_STATE_DIR = Path("~/.claude/teams-monitor").expanduser()
 DEFAULT_CONFIG_PATH = STATE_DIR / "chats.json"
 LOG_FILE = STATE_DIR / "log.jsonl"
 STOP_FILE = STATE_DIR / "STOP"
 CLAUDE_TAG = "[Claude] "
 DEFAULT_POLL_SECONDS = 30
+
+
+def migrate_legacy_state_dir() -> bool:
+    """One-shot migration from ~/.claude/teams-monitor/ -> ~/.claude/chat-watch/.
+
+    The plugin was renamed from teams-monitor -> chat-watch on 2026-05-09. Existing
+    installs have config + state under the old path. This function moves the dir
+    on first run if (and only if): legacy exists AND new path does not.
+
+    Idempotent. Logs to stderr (cannot use log_event because LOG_FILE may not
+    exist yet — and would point to the new dir before migration completes).
+
+    Returns True if migration ran, False if no migration needed.
+    """
+    if not LEGACY_STATE_DIR.exists():
+        return False
+    if STATE_DIR.exists():
+        # Both exist — migration already happened or operator created new path manually
+        return False
+    try:
+        LEGACY_STATE_DIR.rename(STATE_DIR)
+        print(
+            f"chat-watch: migrated {LEGACY_STATE_DIR} -> {STATE_DIR} (one-shot rename)",
+            file=sys.stderr,
+            flush=True,
+        )
+        return True
+    except OSError as exc:
+        print(
+            f"chat-watch: WARN — could not migrate {LEGACY_STATE_DIR} -> {STATE_DIR}: {exc}. "
+            f"Move manually or set --config to a custom path.",
+            file=sys.stderr,
+            flush=True,
+        )
+        return False
 
 
 @dataclass(frozen=True)
@@ -739,6 +775,10 @@ def _resolve_chat(chat_configs: list[ChatConfig], label: str | None) -> ChatConf
 
 
 def main() -> int:
+    # One-shot migration before any path is used (legacy teams-monitor -> chat-watch).
+    # Safe no-op if migration already happened or never needed.
+    migrate_legacy_state_dir()
+
     parser = argparse.ArgumentParser(description="Teams chat monitor (multi-chat)")
     parser.add_argument(
         "--config",

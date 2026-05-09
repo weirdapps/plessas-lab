@@ -1,7 +1,7 @@
 [project]
-name = "teams-monitor"
+name = "chat-watch"
 version = "0.1.0"
-description = "Experimental — monitors the 'digital nomads' Teams chat and posts [Claude]-tagged replies"
+description = "Experimental — polls MS Teams chats and posts [Claude]-prefixed replies via LLM gate"
 requires-python = ">=3.11"
 
 [tool.pytest.ini_options]

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Integrations Marketplace Consistency Validator
+plessas-lab Consistency Validator
 
-Cross-file consistency checks for the integrations-marketplace plugins.
+Cross-file consistency checks for the plessas-lab plugins.
 Run locally or in CI to catch stale references and YAML hazards.
 
 Usage:
@@ -154,7 +154,7 @@ def check_python_tools() -> None:
 
 
 def main() -> None:
-    print("\033[1m\nIntegrations Marketplace — Consistency Validator\033[0m")
+    print("\033[1m\nplessas-lab — Consistency Validator\033[0m")
     print("=" * 52)
 
     check_manifests()

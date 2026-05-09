@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-# Make plugins/teams-monitor importable
+# Make plugins/chat-watch importable
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import monitor  # noqa: E402

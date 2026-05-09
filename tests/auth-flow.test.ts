@@ -1,5 +1,5 @@
 /**
- * Auth-flow and token-handling tests for integrations-marketplace
+ * Auth-flow and token-handling tests for plessas-lab
  *
  * Tests security-critical credential handling paths across YouTube, Gmail,
  * and Nano Banana integrations to prevent token leaks and auth failures.
