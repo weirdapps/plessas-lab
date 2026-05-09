@@ -4,9 +4,10 @@ argument-hint: "[command] [options]"
 allowed-tools: Skill(manage-nano-banana), Skill(manage-youtube), Bash
 ---
 
+# Create NBG Infographic
+
 <objective>
 Delegate graphics creation to the manage-nano-banana skill.
-Delegate presentation or document creation to manage-google-workspace skill.
 
 User request: $ARGUMENTS
 </objective>

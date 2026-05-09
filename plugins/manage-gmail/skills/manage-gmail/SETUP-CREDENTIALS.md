@@ -1,74 +1,73 @@
-# Gmail Skill - Credentials Setup
+# Gmail Skill — Credentials Setup
 
-This document explains how to set up the OAuth credentials for the Gmail skill on first-time use.
+This document walks you through obtaining and installing OAuth 2.0 credentials so the Gmail skill can read and send mail on your behalf.
 
-## Prerequisites
+> **Why this exists:** The skill needs a Google Cloud OAuth client to talk to the Gmail API on your account. The credentials JSON is per-user and per-project — the marketplace cannot ship one for you. Allow about 10 minutes the first time.
 
-The skill comes with a pre-configured OAuth credentials file in the `skill-key` folder:
+## Step 1 — Create a Google Cloud project (one-time)
 
-```
-./skill-key/GMailSkill-Credentials.json
-```
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. In the project picker (top bar), choose **NEW PROJECT** (or reuse an existing personal project).
+3. Give it any name (e.g. `claude-gmail`) and click **CREATE**.
+4. Wait for the project to provision, then make sure it's selected in the project picker.
 
-## Setup Steps
+## Step 2 — Enable the Gmail API
 
-### Step 1: Create the Target Directory
+1. Open [API Library](https://console.cloud.google.com/apis/library) (with your new project selected).
+2. Search **Gmail API**, click it, and click **ENABLE**.
 
-The skill expects credentials to be stored in `~/.google-skills/gmail/`. Create this directory if it doesn't exist:
+## Step 3 — Configure the OAuth consent screen
+
+1. Open [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent).
+2. Choose **External** (unless you're in a Google Workspace org and only signing in to a `@yourdomain` account, in which case **Internal** is fine).
+3. Fill in the required fields:
+   - **App name**: anything (e.g. `Claude Gmail`)
+   - **User support email**: your own email
+   - **Developer contact email**: your own email
+4. Save and continue. On the **Scopes** step you can skip (the skill requests scopes at runtime). On the **Test users** step, **add your own Google email** as a test user — otherwise OAuth will refuse to issue a token.
+5. Save and continue. The app stays in **Testing** status, which is exactly what we want for personal use.
+
+## Step 4 — Create the OAuth client credentials
+
+1. Open [Credentials](https://console.cloud.google.com/apis/credentials).
+2. Click **+ CREATE CREDENTIALS → OAuth client ID**.
+3. **Application type**: choose **Desktop app**.
+4. **Name**: anything (e.g. `Claude Gmail Desktop`).
+5. Click **CREATE**. A dialog appears with your client ID and secret — click **DOWNLOAD JSON**.
+
+## Step 5 — Install the credentials
+
+The skill expects the file at `~/.google-skills/gmail/GMailSkill-Credentials.json`. Move the downloaded file there:
 
 ```bash
 mkdir -p ~/.google-skills/gmail
-```
-
-### Step 2: Copy the Credentials File
-
-Copy the credentials file from the skill-key folder to the expected runtime location:
-
-```bash
-cp ./skill-key/GMailSkill-Credentials.json ~/.google-skills/gmail/
-```
-
-### Step 3: Verify the File is in Place
-
-Confirm the file was copied successfully:
-
-```bash
+mv ~/Downloads/client_secret_*.json ~/.google-skills/gmail/GMailSkill-Credentials.json
 ls -la ~/.google-skills/gmail/GMailSkill-Credentials.json
 ```
 
-## First-Time Authentication
+(Adjust the source path if your browser saves elsewhere. The destination filename **must** be exactly `GMailSkill-Credentials.json`.)
 
-When you run any Gmail operation for the first time, the following will happen:
+## Step 6 — First-time authorization
 
-1. **Browser Window Opens**: A browser window will automatically open for OAuth consent
-2. **Grant Permissions**: Sign in to your Google account and grant the requested permissions
-3. **Token Created**: After authorization, a token file is automatically created at:
+The first Gmail operation you run will:
 
-   ```
-   ~/.google-skills/gmail/gmail_token.json
-   ```
+1. Open a browser window with Google's OAuth consent screen.
+2. You'll see "**Google hasn't verified this app**" — that's expected for a personal Test-status app. Click **Advanced → Go to <your project> (unsafe)** to proceed (you're authorizing yourself).
+3. Grant the permissions the skill requests.
+4. The browser tab closes automatically and a token is written to `~/.google-skills/gmail/gmail_token.json`. Subsequent calls reuse that token silently.
 
-4. **Ready to Use**: Subsequent operations will use the stored token automatically
-
-## File Summary
+## File summary
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `GMailSkill-Credentials.json` | `~/.google-skills/gmail/` | OAuth client credentials (copied from skill-key) |
-| `gmail_token.json` | `~/.google-skills/gmail/` | Access token (auto-generated after first auth) |
+| `GMailSkill-Credentials.json` | `~/.google-skills/gmail/` | OAuth client identity (your hand-installed file) |
+| `gmail_token.json` | `~/.google-skills/gmail/` | Access + refresh token (auto-written after first auth) |
 
 ## Troubleshooting
 
-### Token Expired or Authentication Errors
-
-If you encounter persistent authentication errors, delete the token file and re-authenticate:
-
-```bash
-rm ~/.google-skills/gmail/gmail_token.json
-```
-
-Then run any Gmail operation to trigger the OAuth flow again.
-
-### Credentials File Not Found Error
-
-If you see "Credentials file not found", ensure you've completed Steps 1-2 above. The exact error message will show the expected path.
+| Symptom | Fix |
+|---------|-----|
+| `Credentials file not found` at runtime | Recheck Step 5 — the path must be exactly `~/.google-skills/gmail/GMailSkill-Credentials.json`. |
+| `Error 403: access_denied` in the browser | You're not in the **Test users** list. Go back to Step 3, add your email, retry. |
+| Token expired or repeated auth errors | `rm ~/.google-skills/gmail/gmail_token.json` and re-run any Gmail operation to redo the OAuth flow. |
+| App banner says "in production" or "needs verification" | Don't switch the app to Production unless you actually need other users to authenticate — Test status is the right mode for personal use. |

@@ -1,62 +1,63 @@
-# YouTube Skill - Credentials Setup
+# YouTube Skill — Credentials Setup
 
-This document explains how to set up the OAuth credentials for the YouTube skill's playlist management features.
+This document walks you through obtaining and installing OAuth 2.0 credentials for the YouTube skill's **playlist management features only**.
 
-## Important Notes
+> **Important:** Content discovery tools (channel info, search, transcripts, etc.) work without any credentials. You only need this setup if you want to create, update, or delete YouTube playlists.
 
-The YouTube skill has two types of tools:
+The credentials JSON is per-user and per-project — the marketplace cannot ship one for you. Allow about 10 minutes the first time.
 
-1. **Content Discovery Tools** - No authentication required (channel info, search, transcripts, etc.)
-2. **Playlist Management Tools** - OAuth authentication required (create/update/delete playlists)
+## Step 1 — Create a Google Cloud project (one-time)
 
-This setup is **only required for Playlist Management features**. Content discovery tools work without any credentials.
+1. Open [Google Cloud Console](https://console.cloud.google.com/).
+2. In the project picker (top bar), choose **NEW PROJECT** (or reuse an existing personal project — the same project can host both Gmail and YouTube credentials).
+3. Give it any name (e.g. `claude-youtube`) and click **CREATE**.
+4. Wait for the project to provision, then make sure it's selected in the project picker.
 
-## Prerequisites
+## Step 2 — Enable the YouTube Data API v3
 
-The skill comes with a pre-configured OAuth credentials file in the `skill-key` folder:
+1. Open [API Library](https://console.cloud.google.com/apis/library) (with your project selected).
+2. Search **YouTube Data API v3**, click it, and click **ENABLE**.
 
-```
-./skill-key/YouTubeSkill-Credentials.json
-```
+## Step 3 — Configure the OAuth consent screen
 
-## Setup Steps
+1. Open [OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent).
+2. Choose **External** (unless you're in a Google Workspace org).
+3. Fill in:
+   - **App name**: anything (e.g. `Claude YouTube`)
+   - **User support email**: your own email
+   - **Developer contact email**: your own email
+4. Save and continue. Skip Scopes. On **Test users**, **add your own Google email** — otherwise OAuth will refuse to issue a token.
+5. Save and continue. Leave the app in **Testing** status.
 
-### Step 1: Create the Target Directory
+## Step 4 — Create the OAuth client credentials
 
-The skill expects credentials to be stored in `~/.google-skills/youtube/`. Create this directory if it doesn't exist:
+1. Open [Credentials](https://console.cloud.google.com/apis/credentials).
+2. Click **+ CREATE CREDENTIALS → OAuth client ID**.
+3. **Application type**: choose **Desktop app**.
+4. **Name**: anything (e.g. `Claude YouTube Desktop`).
+5. Click **CREATE**, then **DOWNLOAD JSON** in the dialog.
+
+## Step 5 — Install the credentials
+
+The skill expects the file at `~/.google-skills/youtube/YouTubeSkill-Credentials.json`. Move the downloaded file there:
 
 ```bash
 mkdir -p ~/.google-skills/youtube
-```
-
-### Step 2: Copy the Credentials File
-
-Copy the credentials file from the skill-key folder to the expected runtime location:
-
-```bash
-cp ./skill-key/YouTubeSkill-Credentials.json ~/.google-skills/youtube/
-```
-
-### Step 3: Verify the File is in Place
-
-Confirm the file was copied successfully:
-
-```bash
+mv ~/Downloads/client_secret_*.json ~/.google-skills/youtube/YouTubeSkill-Credentials.json
 ls -la ~/.google-skills/youtube/YouTubeSkill-Credentials.json
 ```
 
-### Step 4: Install Dependencies for Playlist Tools
+(Adjust the source path if your browser saves elsewhere. The destination filename **must** be exactly `YouTubeSkill-Credentials.json`.)
 
-Navigate to the playlist-tools directory and install the required npm packages:
+## Step 6 — Install playlist tooling dependencies
+
+The playlist tools are TypeScript-based and need npm packages installed once:
 
 ```bash
-cd ./tools/playlist-tools
-npm install
+cd ./tools/playlist-tools && npm install
 ```
 
-## First-Time Authentication
-
-To authenticate with YouTube for playlist management:
+## Step 7 — First-time authorization
 
 ```bash
 npx tsx ./tools/playlist-auth.ts login
@@ -64,55 +65,25 @@ npx tsx ./tools/playlist-auth.ts login
 
 This will:
 
-1. **Browser Window Opens**: A browser window will automatically open for OAuth consent
-2. **Grant Permissions**: Sign in to your Google account and grant YouTube access
-3. **Token Created**: After authorization, a token file is automatically created at:
+1. Open a browser window with Google's OAuth consent screen.
+2. You'll see "**Google hasn't verified this app**" — expected for a personal Test-status app. Click **Advanced → Go to <your project> (unsafe)** to proceed.
+3. Grant YouTube access.
+4. The browser tab closes and a token is written to `~/.google-skills/youtube/youtube-tokens.json`. Subsequent playlist operations reuse it silently.
 
-   ```
-   ~/.google-skills/youtube/youtube-tokens.json
-   ```
-
-4. **Ready to Use**: Subsequent playlist operations will use the stored token automatically
-
-## File Summary
+## File summary
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `YouTubeSkill-Credentials.json` | `~/.google-skills/youtube/` | OAuth client credentials (copied from skill-key) |
-| `youtube-tokens.json` | `~/.google-skills/youtube/` | Access token (auto-generated after first auth) |
-| `playlists-cache.json` | `~/.google-skills/youtube/` | Local playlist cache (auto-created by sync operations) |
+| `YouTubeSkill-Credentials.json` | `~/.google-skills/youtube/` | OAuth client identity (your hand-installed file) |
+| `youtube-tokens.json` | `~/.google-skills/youtube/` | Access + refresh token (auto-written after first auth) |
+| `playlists-cache.json` | `~/.google-skills/youtube/` | Local playlist cache (auto-written by sync operations) |
 
 ## Troubleshooting
 
-### Check Authentication Status
-
-To verify your authentication status:
-
-```bash
-npx tsx ./tools/playlist-auth.ts status
-```
-
-### Refresh Tokens
-
-If tokens are expired:
-
-```bash
-npx tsx ./tools/playlist-auth.ts refresh
-```
-
-### Logout and Re-authenticate
-
-If you encounter persistent authentication errors, logout and login again:
-
-```bash
-npx tsx ./tools/playlist-auth.ts logout
-npx tsx ./tools/playlist-auth.ts login
-```
-
-### Credentials File Not Found Error
-
-If you see "Credentials file not found", ensure you've completed Steps 1-2 above. The exact error message will show the expected path.
-
-### Content Discovery Tools Not Affected
-
-Remember: Content discovery tools (channel-info, search, transcript, etc.) work without OAuth. This setup is only for playlist management features.
+| Symptom | Fix |
+|---------|-----|
+| `Credentials file not found` at runtime | Recheck Step 5 — the path must be exactly `~/.google-skills/youtube/YouTubeSkill-Credentials.json`. |
+| `Error 403: access_denied` in the browser | You're not in the **Test users** list. Go back to Step 3, add your email, retry. |
+| Token expired errors | `npx tsx ./tools/playlist-auth.ts refresh` — or full reset: `npx tsx ./tools/playlist-auth.ts logout && npx tsx ./tools/playlist-auth.ts login`. |
+| Status check | `npx tsx ./tools/playlist-auth.ts status` confirms whether your token is still valid. |
+| Discovery tools fail | They shouldn't need OAuth at all — if they do, it's a different bug; check the skill's main docs. |
