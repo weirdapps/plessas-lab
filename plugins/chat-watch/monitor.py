@@ -165,6 +165,7 @@ def default_state() -> dict[str, Any]:
         "first_run_at": None,
         "last_seen_message_id": None,
         "replies": [],
+        "attempts": {},
     }
 
 
@@ -380,8 +381,28 @@ def build_prompt(
     )
 
 
-CLAUDE_TIMEOUT_SECONDS = 120
+CLAUDE_TIMEOUT_SECONDS = 240
 CLAUDE_MODEL = "sonnet"
+MAX_LLM_ATTEMPTS = 3
+
+
+def notify_user(title: str, message: str) -> None:
+    """Best-effort macOS notification. Silently swallows failures.
+
+    Used to surface stuck-message events from the launchd-managed daemon when the
+    LLM gate has failed enough times that we're giving up. The daemon is otherwise
+    invisible — without this, dropped messages are only discoverable via log grep.
+    """
+    safe_msg = message.replace('"', "'")[:200]
+    safe_title = title.replace('"', "'")[:80]
+    try:
+        subprocess.run(
+            ["osascript", "-e", f'display notification "{safe_msg}" with title "{safe_title}"'],
+            capture_output=True,
+            timeout=5,
+        )
+    except Exception:  # noqa: BLE001 — notification is best-effort, never block
+        pass
 
 
 def invoke_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT_SECONDS) -> str:
@@ -453,18 +474,25 @@ def process_message(
     *,
     now: datetime,
     dry_run: bool,
-) -> None:
-    """Decide whether to reply to msg and (if not dry-run) post the reply."""
+) -> bool:
+    """Decide whether to reply to msg and (if not dry-run) post the reply.
+
+    Returns True if the cursor should advance past this message (handled, skipped,
+    or given up after MAX_LLM_ATTEMPTS). Returns False on transient LLM error so
+    the next poll retries the same message — preserving the chronological order
+    that thread/chat context depends on.
+    """
     msg_id = msg["id"]
     body_html = msg.get("content", "")
     sender = msg.get("imdisplayname", "?")
     composed_at = msg.get("composetime", "")
     new_text = _strip_html(body_html).strip()
     thread_id = _thread_key(msg)
+    attempts = state.setdefault("attempts", {})
 
     if is_self_message(body_html):
         log_event("skip", chat=chat_cfg.label, reason="self_message", msg_id=msg_id)
-        return
+        return True
 
     if not rate_limit_ok(
         state,
@@ -474,7 +502,7 @@ def process_message(
         per_thread_cooldown_minutes=chat_cfg.per_thread_cooldown_minutes,
     ):
         log_event("rate_limited", chat=chat_cfg.label, msg_id=msg_id, thread_id=thread_id)
-        return
+        return True
 
     thread_msgs = extract_thread_messages(all_msgs, msg)
     chat_24h_msgs = extract_chat_24h(all_msgs, msg, now=now)
@@ -492,10 +520,35 @@ def process_message(
     try:
         raw = invoke_claude(prompt)
     except ClaudeCliError as exc:
+        attempt_count = attempts.get(msg_id, 0) + 1
+        attempts[msg_id] = attempt_count
         log_event(
-            "error", chat=chat_cfg.label, stage="invoke_claude", msg_id=msg_id, error=str(exc)
+            "error",
+            chat=chat_cfg.label,
+            stage="invoke_claude",
+            msg_id=msg_id,
+            error=str(exc),
+            attempt=attempt_count,
         )
-        return
+        if attempt_count >= MAX_LLM_ATTEMPTS:
+            attempts.pop(msg_id, None)
+            log_event(
+                "gave_up",
+                chat=chat_cfg.label,
+                msg_id=msg_id,
+                attempts=attempt_count,
+                sender=sender,
+                preview=new_text[:200],
+            )
+            notify_user(
+                title=f"chat-watch: gave up on {chat_cfg.label}",
+                message=f"{sender}: {new_text[:120]}",
+            )
+            return True  # advance — don't deadlock on one bad message
+        return False  # transient — retry next poll
+
+    # Success path: clear any prior attempt count for this msg_id
+    attempts.pop(msg_id, None)
 
     decision = parse_decision(raw)
     if decision is None:
@@ -506,7 +559,7 @@ def process_message(
             msg_id=msg_id,
             raw_preview=raw[:200],
         )
-        return
+        return True  # parser failures aren't retryable — same prompt → same garbage
 
     if not decision["reply"]:
         log_event(
@@ -516,7 +569,7 @@ def process_message(
             msg_id=msg_id,
             gate_reason=decision.get("reason", ""),
         )
-        return
+        return True
 
     text = decision["text"].strip()
     # Strip any [Claude] the LLM added — we add it ourselves
@@ -532,7 +585,7 @@ def process_message(
             text=posted_html,
             gate_reason=decision.get("reason", ""),
         )
-        return
+        return True
 
     try:
         send_message(chat_cfg.chat_id, posted_html)
@@ -545,7 +598,7 @@ def process_message(
             drafted=posted_html,
             error=str(exc),
         )
-        return
+        return True  # don't loop on send failures — auth/network needs operator action
 
     state["replies"].append(
         {
@@ -557,6 +610,7 @@ def process_message(
     log_event(
         "reply_posted", chat=chat_cfg.label, msg_id=msg_id, text=posted_html, thread_id=thread_id
     )
+    return True
 
 
 def run_once_for_chat(chat_cfg: ChatConfig, *, now: datetime, dry_run: bool) -> None:
@@ -589,9 +643,15 @@ def run_once_for_chat(chat_cfg: ChatConfig, *, now: datetime, dry_run: bool) -> 
     log_event("poll", chat=chat_cfg.label, new_count=len(new_msgs), total_in_window=len(msgs))
 
     for m in new_msgs:
-        process_message(m, msgs, state, chat_cfg, now=now, dry_run=dry_run)
-        state["last_seen_message_id"] = max(state["last_seen_message_id"], m["id"])
+        advance = process_message(m, msgs, state, chat_cfg, now=now, dry_run=dry_run)
+        if advance:
+            state["last_seen_message_id"] = max(state["last_seen_message_id"], m["id"])
         save_state(chat_cfg.state_file, state)
+        if not advance:
+            # Transient failure (e.g. LLM timeout). Stop the loop here so context
+            # for newer messages stays correct on retry. Next poll picks up where
+            # we left off; MAX_LLM_ATTEMPTS bounds how long we stall.
+            break
 
 
 def replay_one(message_id: str, chat_cfg: ChatConfig) -> int:

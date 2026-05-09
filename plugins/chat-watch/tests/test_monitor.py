@@ -310,3 +310,131 @@ def test_invoke_claude_raises_on_timeout():
     with patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=30)):
         with pytest.raises(monitor.ClaudeCliError):
             monitor.invoke_claude("test prompt")
+
+
+def test_invoke_claude_default_timeout_is_at_least_240_seconds():
+    """Vertex AI tail latency on Opus can blow past 120s. Default must be ≥240s."""
+    assert monitor.CLAUDE_TIMEOUT_SECONDS >= 240
+
+
+# --- Resilient-error-handling regression tests (the "Σιωπή..." incident, 2026-05-09) ---
+
+
+def _patch_recall(monkeypatch):
+    """Stub fetch_recall_hits so tests never touch the real second-brain DB."""
+    monkeypatch.setattr(monitor, "fetch_recall_hits", lambda _q: "(stubbed)")
+
+
+def _isolate_log(monkeypatch, tmp_path):
+    """Redirect LOG_FILE to tmp_path so tests don't pollute the real chat-watch log."""
+    monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
+
+
+def test_process_message_returns_false_on_llm_timeout(tmp_path, msg_factory, now, monkeypatch):
+    """LLM timeout → process_message returns False (don't advance cursor) and bumps attempts."""
+    _patch_recall(monkeypatch)
+    _isolate_log(monkeypatch, tmp_path)
+    _, template = _write_synthetic_config(tmp_path)
+    cfg = monitor.ChatConfig(
+        label="t",
+        chat_id="c",
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+    )
+    state = monitor.default_state()
+    state["last_seen_message_id"] = "0"
+    msg = msg_factory(msg_id="42", text="hello")
+
+    with patch.object(monitor, "invoke_claude", side_effect=monitor.ClaudeCliError("timed out")):
+        advance = monitor.process_message(msg, [msg], state, cfg, now=now, dry_run=False)
+
+    assert advance is False
+    assert state["attempts"]["42"] == 1
+
+
+def test_process_message_gives_up_after_max_attempts(tmp_path, msg_factory, now, monkeypatch):
+    """After MAX_LLM_ATTEMPTS retries on the same msg_id, advance the cursor (don't deadlock)."""
+    _patch_recall(monkeypatch)
+    _isolate_log(monkeypatch, tmp_path)
+    _, template = _write_synthetic_config(tmp_path)
+    cfg = monitor.ChatConfig(
+        label="t",
+        chat_id="c",
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+    )
+    state = monitor.default_state()
+    state["last_seen_message_id"] = "0"
+    state["attempts"] = {"42": monitor.MAX_LLM_ATTEMPTS - 1}  # one more failure → give up
+    msg = msg_factory(msg_id="42", text="hello")
+
+    with patch.object(monitor, "invoke_claude", side_effect=monitor.ClaudeCliError("timed out")):
+        with patch.object(monitor, "notify_user") as notify:
+            advance = monitor.process_message(msg, [msg], state, cfg, now=now, dry_run=False)
+
+    assert advance is True  # cursor advances on give-up
+    assert "42" not in state.get("attempts", {})  # cleanup
+    notify.assert_called_once()  # user gets a heads-up
+
+
+def test_process_message_clears_attempts_on_success(tmp_path, msg_factory, now, monkeypatch):
+    """After a previous transient failure, a successful LLM call clears the attempt counter."""
+    _patch_recall(monkeypatch)
+    _isolate_log(monkeypatch, tmp_path)
+    _, template = _write_synthetic_config(tmp_path)
+    cfg = monitor.ChatConfig(
+        label="t",
+        chat_id="c",
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+    )
+    state = monitor.default_state()
+    state["last_seen_message_id"] = "0"
+    state["attempts"] = {"42": 1}
+    msg = msg_factory(msg_id="42", text="hello")
+
+    with patch.object(monitor, "invoke_claude", return_value='{"reply": false, "reason": "noop"}'):
+        advance = monitor.process_message(msg, [msg], state, cfg, now=now, dry_run=True)
+
+    assert advance is True
+    assert "42" not in state.get("attempts", {})
+
+
+def test_run_once_does_not_advance_cursor_on_transient_error(
+    tmp_path, msg_factory, now, monkeypatch
+):
+    """The original bug: LLM timeout must NOT advance last_seen_message_id."""
+    _patch_recall(monkeypatch)
+    _isolate_log(monkeypatch, tmp_path)
+    _, template = _write_synthetic_config(tmp_path)
+    state_path = tmp_path / "state-t.json"
+    cfg = monitor.ChatConfig(
+        label="t",
+        chat_id="c",
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+    )
+    # Pre-seed cursor so we're past cold-start
+    monitor.save_state(state_path, {**monitor.default_state(), "last_seen_message_id": "10"})
+    new_msg = msg_factory(msg_id="42", text="hello")
+
+    with (
+        patch.object(monitor, "list_messages", return_value=[new_msg]),
+        patch.object(monitor, "invoke_claude", side_effect=monitor.ClaudeCliError("timed out")),
+        patch.object(
+            monitor.ChatConfig, "state_file", new_callable=lambda: property(lambda self: state_path)
+        ),
+    ):
+        monitor.run_once_for_chat(cfg, now=now, dry_run=False)
+
+    final_state = monitor.load_state(state_path)
+    assert final_state["last_seen_message_id"] == "10"  # cursor did NOT advance
+    assert final_state["attempts"]["42"] == 1
