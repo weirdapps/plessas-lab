@@ -1,0 +1,30 @@
+name: PII Check
+
+"on":
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master, main]
+
+jobs:
+  pii-gauntlet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run PII gauntlet (CI mode — git-tracked files only)
+        run: |
+          chmod +x installers/pii-gauntlet.sh
+          ./installers/pii-gauntlet.sh --mode=ci
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "### PII Gauntlet PASS" >> $GITHUB_STEP_SUMMARY
+            echo "No personal data detected in the repository." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### PII Gauntlet FAIL" >> $GITHUB_STEP_SUMMARY
+            echo "Personal data detected. Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+            echo "Fix all issues before merging." >> $GITHUB_STEP_SUMMARY
+          fi
