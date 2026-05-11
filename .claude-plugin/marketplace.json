@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Skills for productivity, file management, and external services",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "pluginRoot": "./plugins"
   },
   "plugins": [
@@ -87,6 +87,21 @@
         "monitor",
         "chat",
         "llm-gate"
+      ]
+    },
+    {
+      "name": "mail-pro",
+      "source": "./plugins/mail-pro",
+      "description": "Maintainer-only companion to a `mail` plugin. Adds /comm-report (relationship analytics) and /style-rebuild (corpus-driven style guide). Requires the maintainer's private second-brain SQLite DB at ~/SourceCode/second-brain/data/brain.db. Not portable.",
+      "version": "1.0.0",
+      "author": {
+        "name": "weirdapps"
+      },
+      "license": "MIT",
+      "keywords": [
+        "mail",
+        "analytics",
+        "internal"
       ]
     }
   ]
