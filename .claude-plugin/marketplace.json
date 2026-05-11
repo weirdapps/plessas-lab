@@ -12,7 +12,7 @@
     {
       "name": "manage-apple-notes",
       "source": "./plugins/manage-apple-notes",
-      "description": "Interact with the Apple Notes app. CRUD operations for persistent storage of thoughts, data, and information across sessions.",
+      "description": "[macOS only] Interact with the Apple Notes app via osascript. CRUD operations for persistent storage of thoughts, data, and information across sessions. On non-Mac, scripts exit with a clear platform-error message.",
       "version": "1.0.0",
       "author": {
         "name": "weirdapps"

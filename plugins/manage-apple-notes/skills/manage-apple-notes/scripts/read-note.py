@@ -11,6 +11,14 @@ Usage:
 
 import argparse
 import subprocess
+import sys
+from pathlib import Path
+
+# OS guard — manage-apple-notes is macOS-only.
+sys.path.insert(0, str(Path(__file__).parent))
+from _platform import require_macos
+
+require_macos("read-note.py")
 
 FOLDER = "agent-notes"
 

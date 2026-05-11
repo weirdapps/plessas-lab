@@ -1,5 +1,7 @@
 # manage-apple-notes
 
+> **Platform: macOS only.** This plugin uses AppleScript via `osascript` to drive the Notes.app, which only exists on macOS. On Linux/Windows, every script exits cleanly with a friendly platform-error message (no traceback, no `FileNotFoundError`). The plugin can still be installed on any OS — it just doesn't function elsewhere.
+
 Interact with the Apple Notes app. CRUD operations for persistent storage of thoughts, data, and information across sessions.
 
 ## Platform Requirements
