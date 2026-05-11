@@ -1,0 +1,19 @@
+{
+  "name": "mail-pro",
+  "description": "Mail commands that require the second-brain knowledge store: corpus-driven /comm-report and /style-rebuild, plus the launchd-driven style-sync helper. Companion to the `mail` plugin — install both. Requires private second-brain repo access.",
+  "version": "1.0.0",
+  "author": {
+    "name": "weirdapps"
+  },
+  "license": "MIT",
+  "keywords": [
+    "email",
+    "outlook",
+    "second-brain",
+    "knowledge-store",
+    "corpus-analysis",
+    "style-rebuild",
+    "comm-report"
+  ],
+  "commands": "./commands"
+}

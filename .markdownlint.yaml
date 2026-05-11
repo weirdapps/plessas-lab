@@ -17,3 +17,16 @@ MD034: false
 # Relax emphasis style
 MD049: false
 MD050: false
+
+# Allow fenced code blocks without explicit language tags. Many docs use
+# bare ``` for shell or copy-paste output where a language hint adds noise.
+MD040: false
+
+# Issue templates and PR templates start with H2 (## Plugin) by GitHub
+# convention; command files start with XML tags (<objective>) before any
+# heading. Both are intentional.
+MD041: false
+
+# Allow ordered lists with 1. 2. 3. style (some docs use this naturally,
+# others use 1. 1. 1.; both are valid markdown).
+MD029: false
