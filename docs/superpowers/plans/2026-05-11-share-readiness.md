@@ -419,7 +419,7 @@ git commit -m "fix(apple-notes): add OS guard to all 5 scripts — friendly mess
 - [ ] **Step 1: Read current description.**
 
 ```bash
-python3 -c "import json; print(json.load(open('/Users/plessas/SourceCode/plessas-lab/plugins/manage-apple-notes/.claude-plugin/plugin.json'))['description'])"
+python3 -c "import json; print(json.load(open(__import__('os').path.expanduser('~/SourceCode/plessas-lab/plugins/manage-apple-notes/.claude-plugin/plugin.json'))['description'])"
 ```
 
 - [ ] **Step 2: Prefix with `[macOS only]`.** Edit `plugins/manage-apple-notes/.claude-plugin/plugin.json` so the description starts with `[macOS only]`:
@@ -439,8 +439,8 @@ python3 -c "import json; print(json.load(open('/Users/plessas/SourceCode/plessas
 - [ ] **Step 4: Validate JSON.**
 
 ```bash
-python3 -c "import json; json.load(open('/Users/plessas/SourceCode/plessas-lab/plugins/manage-apple-notes/.claude-plugin/plugin.json'))" && echo OK
-python3 -c "import json; json.load(open('/Users/plessas/SourceCode/plessas-lab/.claude-plugin/marketplace.json'))" && echo OK
+python3 -c "import json; json.load(open(__import__('os').path.expanduser('~/SourceCode/plessas-lab/plugins/manage-apple-notes/.claude-plugin/plugin.json'))" && echo OK
+python3 -c "import json; json.load(open(__import__('os').path.expanduser('~/SourceCode/plessas-lab/.claude-plugin/marketplace.json'))" && echo OK
 ```
 
 Expected: two `OK` lines.
@@ -496,7 +496,7 @@ Expected: README.md, scripts/style-sync.py, .claude-plugin/plugin.json, commands
 ```bash
 python3 -c "
 import json
-m = json.load(open('/Users/plessas/SourceCode/plessas-lab/.claude-plugin/marketplace.json'))
+m = json.load(open(__import__('os').path.expanduser('~/SourceCode/plessas-lab/.claude-plugin/marketplace.json'))
 names = [p['name'] for p in m['plugins']]
 print('plugins:', names)
 assert 'mail-pro' in names, 'mail-pro NOT registered'
@@ -517,7 +517,7 @@ Expected: `No such file or directory`.
 ```bash
 python3 -c "
 import json
-m = json.load(open('/Users/plessas/SourceCode/plessas-marketplace/.claude-plugin/marketplace.json'))
+m = json.load(open(__import__('os').path.expanduser('~/SourceCode/plessas-marketplace/.claude-plugin/marketplace.json'))
 names = [p['name'] for p in m['plugins']]
 print('plugins:', names)
 assert 'mail-pro' not in names, 'mail-pro still in plessas-marketplace'
@@ -550,7 +550,7 @@ If a validator is found, run it. If not, fall back to a generic JSON validation:
 ```bash
 python3 -c "
 import json, glob
-for path in sorted(glob.glob('/Users/plessas/SourceCode/plessas-lab/plugins/*/.claude-plugin/plugin.json')):
+for path in sorted(glob.glob(__import__('os').path.expanduser('~/SourceCode/plessas-lab/plugins/*/.claude-plugin/plugin.json')):
     try:
         d = json.load(open(path))
         assert 'name' in d, f'missing name in {path}'

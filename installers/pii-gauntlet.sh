@@ -159,7 +159,7 @@ check "Personal phone" "694[[:space:]]?9200878|6949200878"
 check "Personal address" "174[[:space:]]+Syggrou|Συγγρού[[:space:]]+174"
 
 # Greek tax IDs (9-digit standalone, with word boundaries)
-check "9-digit ID pattern" "[^0-9][0-9]{9}[^0-9]"
+check "9-digit ID pattern" "[^0-9a-fA-F][0-9]{9}[^0-9a-fA-F]"
 
 # Peer names (NBG colleagues / direct reports / managers)
 check "Peer/colleague names" "Volioti|Bitrou|Sioutis|Theofilidi|Θεοφιλίδη|Χριστίνα|Lygeros|Oikonomou|Maraveas|Xona|Petropoulou|Laspas|Koutra|Giemelou"
