@@ -34,7 +34,11 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-testpaths = ["tests"]
+# Include both top-level tests/ (TS via vitest, no Python here) and per-plugin
+# tests/ dirs. Without "plugins", pytest collects 0 tests from the Python
+# plugins (chat-watch, manage-apple-notes), causing SonarCloud's coverage gate
+# to report 0% on new code.
+testpaths = ["tests", "plugins"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
