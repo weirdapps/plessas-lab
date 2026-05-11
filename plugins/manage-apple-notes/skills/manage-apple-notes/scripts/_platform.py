@@ -18,7 +18,7 @@ def require_macos(script_name: str = "this script") -> None:
     the calling agent (or shell) sees a clear "this is macOS only"
     message rather than a Python traceback or "command not found".
     """
-    if sys.platform != "darwin":
+    if not sys.platform.startswith("darwin"):
         sys.stderr.write(
             f"manage-apple-notes is macOS-only — {script_name} requires the "
             f"Notes.app and osascript, neither of which exist on "

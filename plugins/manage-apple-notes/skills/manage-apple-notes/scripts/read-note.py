@@ -16,7 +16,7 @@ from pathlib import Path
 
 # OS guard — manage-apple-notes is macOS-only.
 sys.path.insert(0, str(Path(__file__).parent))
-from _platform import require_macos
+from _platform import require_macos  # type: ignore[import]
 
 require_macos("read-note.py")
 
