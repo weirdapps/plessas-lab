@@ -29,6 +29,12 @@ __pycache__/
 .venv
 venv
 
+# Test coverage artifacts
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Temp
 *.tmp
 *.bak
