@@ -10,12 +10,23 @@ Enable Claude Code to create, edit, and generate visual content using Google's N
 </objective>
 
 <context>
-**API Authentication**: Uses the `GEMINI_API_KEY` environment variable.
+**Authentication** (two routes, auto-selected by `createClient`):
+
+1. **Vertex AI** — preferred when a GCP project is configured. Set
+   `GOOGLE_CLOUD_PROJECT` (or `ANTHROPIC_VERTEX_PROJECT_ID`); auth via ADC
+   (`gcloud auth application-default login`). Bills the project and keeps data
+   in-region. On EU projects `gemini-2.5-flash-image` is served from
+   `europe-west1` — override with `NANO_BANANA_VERTEX_LOCATION` if your project
+   differs (the `eu` and `global` endpoints may be unavailable).
+2. **Google AI Studio API key** — set `GEMINI_API_KEY`. Portable fallback, and
+   the ONLY route for `gemini-3-pro-image-preview` (not published on Vertex).
+
+Set `NANO_BANANA_FORCE_API_KEY=true` to force the API-key route.
 
 **Available Models**:
 
-- `gemini-2.5-flash-image` - Fast, efficient, ~$0.039/image, 1K resolution
-- `gemini-3-pro-image-preview` - High quality, up to 4K, advanced text rendering, up to 14 reference images
+- `gemini-2.5-flash-image` - Fast, efficient, ~$0.039/image, 1K resolution. Runs on Vertex **or** API key.
+- `gemini-3-pro-image-preview` - High quality, up to 4K, advanced text rendering, up to 14 reference images. **API key only** (no Vertex publisher entry).
 
 **Aspect Ratios**: `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `9:16`, `16:9`, `21:9`
 
@@ -23,7 +34,7 @@ Enable Claude Code to create, edit, and generate visual content using Google's N
 </context>
 
 <quick_start>
-**Setup**: Ensure `GEMINI_API_KEY` is set in environment and install dependencies:
+**Setup**: Configure auth — either a Vertex project (`GOOGLE_CLOUD_PROJECT` / `ANTHROPIC_VERTEX_PROJECT_ID` + ADC) or `GEMINI_API_KEY` (see Authentication above) — and install dependencies:
 
 ```bash
 cd ./tools
