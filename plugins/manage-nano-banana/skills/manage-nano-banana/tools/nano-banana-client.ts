@@ -41,19 +41,51 @@ function getApiKey(): string {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey.trim() === '') {
     throw new Error(
-      "GEMINI_API_KEY environment variable is not set or is empty. " +
-      "Please set it before using the Nano Banana API tools."
+      "No image-generation credentials found. Either configure a Vertex AI " +
+      "project (ANTHROPIC_VERTEX_PROJECT_ID or GOOGLE_CLOUD_PROJECT) to route " +
+      "through Vertex AI, or set GEMINI_API_KEY for the Google AI Studio API."
     );
   }
   return apiKey;
 }
 
 /**
- * Create a configured GoogleGenAI client
+ * Create a configured GoogleGenAI client.
+ *
+ * Routing:
+ *  - Vertex AI (preferred when a GCP project is configured): ADC auth, billed to
+ *    the project, EU data residency. On EU Vertex projects, gemini-2.5-flash-image
+ *    is typically served from europe-west1 — NOT from `eu` or the `global` endpoint.
+ *  - Google AI Studio API key (GEMINI_API_KEY): portable fallback, and the ONLY
+ *    route for gemini-3-pro-image-preview (no Vertex publisher entry yet).
+ *
+ * @param model target model; used to force API-key mode for the pro model.
  */
-export function createClient(): GoogleGenAI {
-  const apiKey = getApiKey();
-  return new GoogleGenAI({ apiKey });
+export function createClient(model?: ModelId): GoogleGenAI {
+  const project =
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.VERTEX_SDK_PROJECT ||
+    process.env.ANTHROPIC_VERTEX_PROJECT_ID;
+
+  // gemini-3-pro-image-preview has no Vertex publisher entry for this project,
+  // so it can only run via the AI Studio API key.
+  const proOnlyOnApiKey = model === "gemini-3-pro-image-preview";
+
+  const useVertex =
+    !proOnlyOnApiKey &&
+    process.env.NANO_BANANA_FORCE_API_KEY !== "true" &&
+    (process.env.GOOGLE_GENAI_USE_VERTEXAI === "true" || Boolean(project));
+
+  if (useVertex && project) {
+    // flash-image lives in europe-west1 on this project (not `eu`/global).
+    const location =
+      process.env.NANO_BANANA_VERTEX_LOCATION ||
+      process.env.VERTEX_REGION_EMBED ||
+      "europe-west1";
+    return new GoogleGenAI({ vertexai: true, project, location });
+  }
+
+  return new GoogleGenAI({ apiKey: getApiKey() });
 }
 
 /**
@@ -124,7 +156,7 @@ export async function generateImage(
   }
 
   try {
-    const ai = createClient();
+    const ai = createClient(model);
 
     const imageConfig: ImageConfig = {
       aspectRatio,
@@ -193,7 +225,7 @@ export async function editImage(
   const { model = "gemini-2.5-flash-image" } = options;
 
   try {
-    const ai = createClient();
+    const ai = createClient(model);
     const base64Image = readImageAsBase64(inputPath);
     const mimeType = getMimeType(inputPath);
 
