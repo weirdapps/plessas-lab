@@ -382,7 +382,10 @@ def build_prompt(
 
 
 CLAUDE_TIMEOUT_SECONDS = 240
-CLAUDE_MODEL = "sonnet"
+# Opus for the gate + reply drafting: this daemon auto-sends replies in Teams
+# under Plessas's name, so judgement quality carries reputational stakes.
+# The launchd plist pins CLOUD_ML_REGION=eu (VERTEX_REGION_HEAVY) to match.
+CLAUDE_MODEL = "opus"
 MAX_LLM_ATTEMPTS = 3
 
 

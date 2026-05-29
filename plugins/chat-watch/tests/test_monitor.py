@@ -298,10 +298,10 @@ def test_invoke_claude_returns_stdout():
     with patch("subprocess.run", return_value=fake) as mock_run:
         out = monitor.invoke_claude("test prompt")
         assert out.strip() == '{"reply": false, "reason": "ok"}'
-        # Verify --model sonnet is in args
+        # Verify --model opus is in args
         called_args = mock_run.call_args[0][0]
         assert "--model" in called_args
-        assert "sonnet" in called_args
+        assert "opus" in called_args
         assert "--print" in called_args
 
 
