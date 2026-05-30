@@ -1,5 +1,6 @@
 """Tests for monitor.py."""
 
+import json
 import subprocess
 import sys
 from datetime import timedelta
@@ -287,22 +288,26 @@ def test_run_teams_cli_raises_on_auth_error():
             monitor.run_teams_cli(["list-messages", "--chat", "X"])
 
 
-def test_invoke_claude_returns_stdout():
-    """invoke_claude passes prompt via stdin and returns stdout."""
-    fake = subprocess.CompletedProcess(
-        args=["claude", "--print"],
+def _claude_envelope(result, stop_reason="end_turn", is_error=False):
+    """A `claude --output-format json` stdout envelope as a CompletedProcess."""
+    return subprocess.CompletedProcess(
+        args=["claude"],
         returncode=0,
-        stdout='{"reply": false, "reason": "ok"}\n',
+        stdout=json.dumps({"result": result, "stop_reason": stop_reason, "is_error": is_error}),
         stderr="",
     )
+
+
+def test_invoke_claude_returns_result():
+    """invoke_claude requests the JSON envelope and returns its `result` text."""
+    fake = _claude_envelope('{"reply": false, "reason": "ok"}')
     with patch("subprocess.run", return_value=fake) as mock_run:
         out = monitor.invoke_claude("test prompt")
-        assert out.strip() == '{"reply": false, "reason": "ok"}'
-        # Verify --model opus is in args
+        assert out == '{"reply": false, "reason": "ok"}'
         called_args = mock_run.call_args[0][0]
         assert "--model" in called_args
-        assert "opus" in called_args
         assert "--print" in called_args
+        assert "--output-format" in called_args and "json" in called_args
 
 
 def test_invoke_claude_raises_on_timeout():
@@ -315,6 +320,33 @@ def test_invoke_claude_raises_on_timeout():
 def test_invoke_claude_default_timeout_is_at_least_240_seconds():
     """Vertex AI tail latency on Opus can blow past 120s. Default must be ≥240s."""
     assert monitor.CLAUDE_TIMEOUT_SECONDS >= 240
+
+
+def test_invoke_claude_downgrades_on_policy_refusal(tmp_path, monkeypatch):
+    """A spurious 'anthropic policy' refusal auto-retries on the Opus 4.6 /
+    europe-west1 fallback tier (model AND region together)."""
+    monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
+    refusal = _claude_envelope("I can't help with that.", stop_reason="refusal")
+    ok = _claude_envelope("REPLY_OK")
+    with patch("subprocess.run", side_effect=[refusal, ok]) as mock_run:
+        out = monitor.invoke_claude("test prompt")
+    assert out == "REPLY_OK"
+    assert mock_run.call_count == 2
+    second = mock_run.call_args_list[1]
+    assert "claude-opus-4-6[1m]" in second[0][0]
+    assert second[1]["env"]["CLOUD_ML_REGION"] == "europe-west1"
+
+
+def test_invoke_claude_downgrades_on_api_error(tmp_path, monkeypatch):
+    """An is_error envelope (e.g. a 429) also triggers the fallback retry."""
+    monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
+    err = _claude_envelope("API Error: 429 quota", stop_reason="stop_sequence", is_error=True)
+    ok = _claude_envelope("REPLY_OK")
+    with patch("subprocess.run", side_effect=[err, ok]) as mock_run:
+        out = monitor.invoke_claude("test prompt")
+    assert out == "REPLY_OK"
+    assert mock_run.call_count == 2
+    assert "claude-opus-4-6[1m]" in mock_run.call_args_list[1][0][0]
 
 
 # --- Resilient-error-handling regression tests (the "Σιωπή..." incident, 2026-05-09) ---
