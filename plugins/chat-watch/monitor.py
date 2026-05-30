@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import signal
 import subprocess
@@ -385,7 +386,9 @@ CLAUDE_TIMEOUT_SECONDS = 240
 # Opus for the gate + reply drafting: this daemon auto-sends replies in Teams
 # under Plessas's name, so judgement quality carries reputational stakes.
 # The launchd plist pins CLOUD_ML_REGION=eu (VERTEX_REGION_HEAVY) to match.
-CLAUDE_MODEL = "opus"
+# Use the exact provisioned id (NOT the bare "opus" alias, which 429s on an
+# unprovisioned eu base bucket); resolved from the same central env the plist sources.
+CLAUDE_MODEL = os.environ.get("VERTEX_MODEL_HEAVY", "claude-opus-4-8[1m]")
 MAX_LLM_ATTEMPTS = 3
 
 
@@ -408,23 +411,67 @@ def notify_user(title: str, message: str) -> None:
         pass
 
 
-def invoke_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT_SECONDS) -> str:
-    """Invoke `claude --model sonnet --print`, return stdout. Raise ClaudeCliError on failure."""
+def _claude_once(prompt: str, model: str, region: str | None, timeout: int) -> dict[str, Any]:
+    """Run claude once (model @ region) requesting the JSON envelope.
+
+    Returns the parsed --output-format json envelope. Raise ClaudeCliError if the CLI
+    times out, is missing, or produces no parseable envelope.
+    """
+    env = dict(os.environ)
+    if region:
+        env["CLOUD_ML_REGION"] = region
     try:
         proc = subprocess.run(
-            ["claude", "--model", CLAUDE_MODEL, "--print"],
+            ["claude", "--model", model, "--print", "--output-format", "json"],
             input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout,
+            env=env,
         )
     except subprocess.TimeoutExpired as exc:
         raise ClaudeCliError(f"claude CLI timed out after {timeout}s") from exc
     except FileNotFoundError as exc:
         raise ClaudeCliError("claude CLI not found on PATH") from exc
-    if proc.returncode != 0:
-        raise ClaudeCliError(f"claude CLI exit {proc.returncode}: {proc.stderr}")
-    return proc.stdout
+    if proc.stdout and proc.stdout.strip():
+        try:
+            return cast(dict[str, Any], json.loads(proc.stdout))
+        except json.JSONDecodeError:
+            pass
+    raise ClaudeCliError(
+        f"claude CLI exit {proc.returncode}, unparseable output: "
+        f"{(proc.stdout or proc.stderr or '')[:200]!r}"
+    )
+
+
+def invoke_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT_SECONDS) -> str:
+    """Invoke claude (Opus 4.8 @ eu) and return the reply text.
+
+    On a spurious 'anthropic policy' refusal or an API error (e.g. a 429), auto-downgrade
+    ONCE to the Opus 4.6 / europe-west1 fallback tier (model AND region together — 4.6
+    lives in europe-west1). Raise ClaudeCliError on hard failure; the caller retries up
+    to MAX_LLM_ATTEMPTS.
+    """
+    envelope = _claude_once(prompt, CLAUDE_MODEL, os.environ.get("CLOUD_ML_REGION"), timeout)
+    if envelope.get("stop_reason") == "refusal" or envelope.get("is_error"):
+        fb_model = os.environ.get("VERTEX_MODEL_FALLBACK", "claude-opus-4-6[1m]")
+        fb_region = os.environ.get("VERTEX_REGION_FALLBACK", "europe-west1")
+        log_event(
+            "llm_downgrade",
+            reason="policy_refusal" if envelope.get("stop_reason") == "refusal" else "api_error",
+            primary=CLAUDE_MODEL,
+            fallback=fb_model,
+            region=fb_region,
+        )
+        envelope = _claude_once(prompt, fb_model, fb_region, timeout)
+        if envelope.get("is_error"):
+            raise ClaudeCliError(
+                f"fallback {fb_model} also failed: {str(envelope.get('result'))[:200]}"
+            )
+    text = envelope.get("result")
+    if not text or not str(text).strip():
+        raise ClaudeCliError("claude CLI returned an empty result field")
+    return str(text)
 
 
 def run_teams_cli(args: list[str], timeout: int = 60) -> dict[str, Any]:
