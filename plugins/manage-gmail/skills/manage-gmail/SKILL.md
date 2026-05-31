@@ -559,3 +559,10 @@ The `send`, `reply`, `forward`, and `draft` commands support file attachments vi
 **API error codes**: See [references/error-handling.md](references/error-handling.md)
 **Scope reference**: See [references/scopes.md](references/scopes.md)
 </reference_guides>
+
+<!-- safety-guardrails:v1 -->
+## Send/delete-safety blacklist (irreversible)
+
+- NEVER auto-send, reply, or forward: draft first, show it, get explicit confirmation before dispatch.
+- NEVER auto-trash (single or bulk). Confirm the exact messages first; `trash-bulk` has a large blast radius.
+- Verify recipients before sending.

@@ -86,3 +86,9 @@ python scripts/attach-clipboard-image.py --title "My Note" --label "screenshot.p
 - **Images via base64** - Technically possible but impractical; use clipboard attachment instead
 - **Clipboard Images** - ✅ Supported via `attach-clipboard-image.py` (copies image from clipboard to note)
 - **File Attachments** - Only images from clipboard are supported; other file types cannot be added programmatically
+
+<!-- safety-guardrails:v1 -->
+## Destructive-action safety
+
+- Delete is irreversible — confirm the exact note before deleting.
+- Edit = delete + recreate: if recreation fails, the original content is lost. Capture the existing body first, and confirm before replacing.
