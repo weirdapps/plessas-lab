@@ -422,7 +422,7 @@ def _claude_once(prompt: str, model: str, region: str | None, timeout: int) -> d
         env["CLOUD_ML_REGION"] = region
     try:
         proc = subprocess.run(
-            ["claude", "--model", model, "--print", "--output-format", "json"],
+            ["claude", "--bare", "--model", model, "--print", "--output-format", "json"],
             input=prompt,
             capture_output=True,
             text=True,
