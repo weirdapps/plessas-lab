@@ -14,10 +14,12 @@ the single-chat behaviour for ``digital_claude`` and adds per-chat state.
 from __future__ import annotations
 
 import argparse
+import gc
 import json
 import os
 import re
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -62,8 +64,25 @@ LEGACY_STATE_DIR = Path("~/.claude/teams-monitor").expanduser()
 DEFAULT_CONFIG_PATH = STATE_DIR / "chats.json"
 LOG_FILE = STATE_DIR / "log.jsonl"
 STOP_FILE = STATE_DIR / "STOP"
+HEARTBEAT_FILE = STATE_DIR / "heartbeat"
 CLAUDE_TAG = "[Claude] "
 DEFAULT_POLL_SECONDS = 30
+
+
+def sd_notify(msg: str) -> None:
+    """Best-effort systemd notification. No-op outside systemd."""
+    addr = os.environ.get("NOTIFY_SOCKET")
+    if not addr:
+        return
+    try:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        if addr[0] == "@":
+            addr = "\0" + addr[1:]
+        sock.connect(addr)
+        sock.sendall(msg.encode())
+        sock.close()
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def migrate_legacy_state_dir() -> bool:
@@ -182,7 +201,9 @@ def load_state(path: Path) -> dict[str, Any]:
 
 def save_state(path: Path, state: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+    tmp.rename(path)
 
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
@@ -320,23 +341,37 @@ def format_messages(msgs: list[dict[str, Any]]) -> str:
 SECOND_BRAIN_SRC = Path("~/SourceCode/second-brain").expanduser()
 SECOND_BRAIN_DB = SECOND_BRAIN_SRC / "data" / "brain.db"
 
+_recall_conn: Any = None
+_recall_fn: Any = None
+
+
+def _get_recall() -> tuple[Any, Any]:
+    """Lazy-init the second-brain recall function and a persistent connection."""
+    global _recall_conn, _recall_fn
+    if _recall_fn is not None and _recall_conn is not None:
+        return _recall_fn, _recall_conn
+    if str(SECOND_BRAIN_SRC) not in sys.path:
+        sys.path.insert(0, str(SECOND_BRAIN_SRC))
+    from src.store.recall import recall as _recall  # type: ignore
+    from src.store.schema import get_connection  # type: ignore
+
+    _recall_conn = get_connection(str(SECOND_BRAIN_DB))
+    _recall_fn = _recall
+    return _recall_fn, _recall_conn
+
 
 def fetch_recall_hits(query: str, limit_per_kind: int = 3) -> str:
     """Targeted second-brain recall. Returns formatted hits or '(unavailable)'."""
+    global _recall_conn
     try:
-        if str(SECOND_BRAIN_SRC) not in sys.path:
-            sys.path.insert(0, str(SECOND_BRAIN_SRC))
-        from src.store.recall import recall  # type: ignore
-        from src.store.schema import get_connection  # type: ignore
-
-        conn = get_connection(str(SECOND_BRAIN_DB))
-        try:
-            hits = recall(conn, query=query, limit_per_kind=limit_per_kind, days=365)
-        finally:
-            conn.close()
-    except Exception as exc:  # noqa: BLE001 — graceful degradation is the contract
+        fn, conn = _get_recall()
+    except Exception as exc:  # noqa: BLE001
         return f"(unavailable: {type(exc).__name__})"
-
+    try:
+        hits = fn(conn, query=query, limit_per_kind=limit_per_kind, days=365)
+    except Exception as exc:  # noqa: BLE001
+        _recall_conn = None
+        return f"(unavailable: {type(exc).__name__})"
     return _format_recall(hits)
 
 
@@ -393,12 +428,9 @@ MAX_LLM_ATTEMPTS = 3
 
 
 def notify_user(title: str, message: str) -> None:
-    """Best-effort macOS notification. Silently swallows failures.
-
-    Used to surface stuck-message events from the launchd-managed daemon when the
-    LLM gate has failed enough times that we're giving up. The daemon is otherwise
-    invisible — without this, dropped messages are only discoverable via log grep.
-    """
+    """Best-effort notification. macOS uses osascript; Linux is a no-op (log_event suffices)."""
+    if sys.platform != "darwin":
+        return
     safe_msg = message.replace('"', "'")[:200]
     safe_title = title.replace('"', "'")[:80]
     try:
@@ -407,7 +439,7 @@ def notify_user(title: str, message: str) -> None:
             capture_output=True,
             timeout=5,
         )
-    except Exception:  # noqa: BLE001 — notification is best-effort, never block
+    except Exception:  # noqa: BLE001
         pass
 
 
@@ -666,7 +698,7 @@ def process_message(
 def run_once_for_chat(chat_cfg: ChatConfig, *, now: datetime, dry_run: bool) -> None:
     """One polling cycle for one chat: fetch, filter, process new messages."""
     state = load_state(chat_cfg.state_file)
-    msgs = list_messages(chat_cfg.chat_id)
+    msgs = list_messages(chat_cfg.chat_id, page_size=25)
     if not msgs:
         log_event("poll", chat=chat_cfg.label, note="no_messages")
         return
@@ -689,6 +721,11 @@ def run_once_for_chat(chat_cfg: ChatConfig, *, now: datetime, dry_run: bool) -> 
     # teams-cli returns newest-first; process in chronological order so context builds correctly
     new_msgs = [m for m in msgs if m["id"] > last_seen]
     new_msgs.sort(key=lambda m: m.get("composetime", ""))
+
+    # Prune stale attempt counters for messages no longer in the fetch window
+    if state.get("attempts"):
+        msg_ids = {m["id"] for m in msgs}
+        state["attempts"] = {k: v for k, v in state["attempts"].items() if k in msg_ids}
 
     log_event("poll", chat=chat_cfg.label, new_count=len(new_msgs), total_in_window=len(msgs))
 
@@ -798,6 +835,33 @@ def _try_auth_renew() -> bool:
         return False
 
 
+def _interruptible_sleep(seconds: int) -> None:
+    """Sleep in 1-second increments, breaking early on shutdown."""
+    for _ in range(seconds):
+        if _shutdown_requested:
+            break
+        time.sleep(1)
+
+
+def _startup_auth(max_attempts: int = 10) -> bool:
+    """Auth with exponential backoff. Returns True on success."""
+    backoff = 30
+    for attempt in range(1, max_attempts + 1):
+        if _shutdown_requested:
+            return False
+        try:
+            run_teams_cli(["auth-check"])
+            return True
+        except TeamsCliAuthRequired:
+            log_event("auth_renewing", reason="startup", attempt=attempt)
+            if _try_auth_renew():
+                return True
+            log_event("auth_wait", backoff=backoff, attempt=attempt)
+            _interruptible_sleep(backoff)
+            backoff = min(backoff * 2, 600)
+    return False
+
+
 def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: int) -> int:
     """Forever: poll each chat, process, sleep. Auto-renews auth every hour."""
     log_event(
@@ -809,21 +873,29 @@ def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: in
     signal.signal(signal.SIGINT, _request_shutdown)
     signal.signal(signal.SIGTERM, _request_shutdown)
 
-    try:
-        run_teams_cli(["auth-check"])
-    except TeamsCliAuthRequired:
-        log_event("auth_renewing", reason="startup")
-        if not _try_auth_renew():
-            print("FATAL: teams-cli auth failed. Run `teams-cli login` first.", file=sys.stderr)
-            log_event("auth_required")
-            return 2
+    if not _startup_auth():
+        log_event("auth_exhausted")
+        print("FATAL: auth failed after retries. Run `teams-cli login`.", file=sys.stderr)
+        return 2
 
+    # Log warm/cold start status per chat
+    for chat_cfg in chat_configs:
+        st = load_state(chat_cfg.state_file)
+        if st["last_seen_message_id"] is not None:
+            log_event("warm_start", chat=chat_cfg.label, last_seen=st["last_seen_message_id"])
+        else:
+            log_event("will_cold_start", chat=chat_cfg.label)
+
+    sd_notify("READY=1")
     last_auth_renew = time.time()
 
     while not _shutdown_requested:
         if STOP_FILE.exists():
             log_event("stop", reason="STOP_file")
             return 0
+
+        sd_notify("WATCHDOG=1")
+        HEARTBEAT_FILE.write_text(datetime.now(UTC).isoformat())
 
         if time.time() - last_auth_renew > AUTH_RENEW_INTERVAL_SECONDS:
             log_event("auth_renewing", reason="periodic")
@@ -844,9 +916,9 @@ def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: in
                 if _try_auth_renew():
                     log_event("auth_renewed", chat=chat_cfg.label)
                     continue
-                log_event("auth_required", chat=chat_cfg.label)
-                print("Auth renewal failed. Run `teams-cli login` and restart.", file=sys.stderr)
-                return 2
+                log_event("auth_renew_failed_midloop", chat=chat_cfg.label)
+                cycle_failed = True
+                break
             except Exception as exc:  # noqa: BLE001
                 import traceback
 
@@ -859,13 +931,10 @@ def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: in
                 )
                 cycle_failed = True
 
-        # Sleep between cycles. On error, back off the same 60s the original
-        # single-chat version used.
+        gc.collect()
+
         sleep_seconds = 60 if cycle_failed else poll_seconds
-        for _ in range(sleep_seconds):
-            if _shutdown_requested:
-                break
-            time.sleep(1)
+        _interruptible_sleep(sleep_seconds)
 
     log_event("stop", reason="signal")
     return 0

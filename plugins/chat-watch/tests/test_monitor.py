@@ -470,3 +470,249 @@ def test_run_once_does_not_advance_cursor_on_transient_error(
     final_state = monitor.load_state(state_path)
     assert final_state["last_seen_message_id"] == "10"  # cursor did NOT advance
     assert final_state["attempts"]["42"] == 1
+
+
+# --- Reliability improvements (VPS crash-loop fix, 2026-06-14) ---
+
+
+def test_save_state_atomic(tmp_path):
+    """save_state writes atomically via tmp+rename — partial writes don't corrupt."""
+    state_path = tmp_path / "state.json"
+    original: dict = {
+        "last_seen_message_id": "100",
+        "replies": [],
+        "first_run_at": None,
+        "attempts": {},
+    }
+    monitor.save_state(state_path, original)
+
+    # Verify the .tmp file is cleaned up (renamed away)
+    assert not state_path.with_suffix(".tmp").exists()
+
+    # Verify content is correct
+    loaded = monitor.load_state(state_path)
+    assert loaded["last_seen_message_id"] == "100"
+
+
+def test_save_state_preserves_original_on_rename_failure(tmp_path):
+    """If rename fails, the original state file survives."""
+    state_path = tmp_path / "state.json"
+    original: dict = {
+        "last_seen_message_id": "50",
+        "replies": [],
+        "first_run_at": None,
+        "attempts": {},
+    }
+    monitor.save_state(state_path, original)
+
+    # Simulate: write new state where rename would fail
+    new_state: dict = {
+        "last_seen_message_id": "999",
+        "replies": [],
+        "first_run_at": None,
+        "attempts": {},
+    }
+    with patch.object(Path, "rename", side_effect=OSError("disk full")):
+        with pytest.raises(OSError):
+            monitor.save_state(state_path, new_state)
+
+    # Original survives
+    loaded = monitor.load_state(state_path)
+    assert loaded["last_seen_message_id"] == "50"
+
+
+def test_startup_auth_retries_with_backoff(tmp_path, monkeypatch):
+    """_startup_auth retries on TeamsCliAuthRequired with increasing backoff."""
+    _isolate_log(monkeypatch, tmp_path)
+    monkeypatch.setattr(monitor, "_shutdown_requested", False)
+
+    call_count = 0
+
+    def fake_run_teams_cli(args):
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 2:
+            raise monitor.TeamsCliAuthRequired("auth required")
+        return {"status": "ok"}
+
+    with (
+        patch.object(monitor, "run_teams_cli", side_effect=fake_run_teams_cli),
+        patch.object(monitor, "_try_auth_renew", return_value=False),
+        patch.object(monitor, "_interruptible_sleep"),
+    ):
+        # Third call succeeds
+        result = monitor._startup_auth(max_attempts=5)
+
+    assert result is True
+    assert call_count == 3
+
+
+def test_startup_auth_exhaustion(tmp_path, monkeypatch):
+    """_startup_auth returns False after max_attempts exhausted."""
+    _isolate_log(monkeypatch, tmp_path)
+    monkeypatch.setattr(monitor, "_shutdown_requested", False)
+
+    with (
+        patch.object(monitor, "run_teams_cli", side_effect=monitor.TeamsCliAuthRequired("no")),
+        patch.object(monitor, "_try_auth_renew", return_value=False),
+        patch.object(monitor, "_interruptible_sleep"),
+    ):
+        result = monitor._startup_auth(max_attempts=3)
+
+    assert result is False
+
+
+def test_midloop_auth_failure_does_not_exit(tmp_path, msg_factory, now, monkeypatch):
+    """Mid-loop auth failure skips remaining chats but does NOT return 2."""
+    _patch_recall(monkeypatch)
+    _isolate_log(monkeypatch, tmp_path)
+    monkeypatch.setattr(monitor, "_shutdown_requested", False)
+    monkeypatch.setattr(monitor, "HEARTBEAT_FILE", tmp_path / "heartbeat")
+
+    _, template = _write_synthetic_config(tmp_path)
+    cfg = monitor.ChatConfig(
+        label="t",
+        chat_id="c",
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+    )
+
+    poll_count = 0
+
+    def fake_run_once(chat_cfg, *, now, dry_run):
+        nonlocal poll_count
+        poll_count += 1
+        if poll_count == 1:
+            raise monitor.TeamsCliAuthRequired("expired")
+        # After first cycle, request shutdown to exit the loop
+        monitor._shutdown_requested = True
+
+    with (
+        patch.object(monitor, "_startup_auth", return_value=True),
+        patch.object(monitor, "run_once_for_chat", side_effect=fake_run_once),
+        patch.object(monitor, "_try_auth_renew", return_value=False),
+        patch.object(monitor, "load_state", return_value=monitor.default_state()),
+        patch.object(monitor, "sd_notify"),
+    ):
+        exit_code = monitor.main_loop([cfg], dry_run=False, poll_seconds=1)
+
+    # Should exit cleanly via shutdown signal, NOT exit 2
+    assert exit_code == 0
+    monkeypatch.setattr(monitor, "_shutdown_requested", False)
+
+
+def test_cached_recall_connection(monkeypatch):
+    """fetch_recall_hits reuses the cached connection on subsequent calls."""
+    # Reset module-level cache
+    monkeypatch.setattr(monitor, "_recall_conn", None)
+    monkeypatch.setattr(monitor, "_recall_fn", None)
+
+    conn_calls = 0
+    fake_conn = object()
+
+    def fake_get_connection(path):
+        nonlocal conn_calls
+        conn_calls += 1
+        return fake_conn
+
+    def fake_recall(conn, *, query, limit_per_kind, days):
+        return {}
+
+    with (
+        patch.dict(
+            "sys.modules",
+            {
+                "src.store.recall": type(sys)("recall"),
+                "src.store.schema": type(sys)("schema"),
+            },
+        ),
+        patch.object(monitor, "_recall_fn", None),
+        patch.object(monitor, "_recall_conn", None),
+    ):
+        # Manually set up the cached state
+        monitor._recall_fn = fake_recall
+        monitor._recall_conn = fake_conn
+
+        result1 = monitor.fetch_recall_hits("test query 1")
+        result2 = monitor.fetch_recall_hits("test query 2")
+
+    assert result1 == "(no hits)"
+    assert result2 == "(no hits)"
+    # Connection was pre-cached, so get_connection was never called
+    assert conn_calls == 0
+
+    # Cleanup
+    monkeypatch.setattr(monitor, "_recall_conn", None)
+    monkeypatch.setattr(monitor, "_recall_fn", None)
+
+
+def test_attempts_pruning_removes_stale_entries(tmp_path, msg_factory, now, monkeypatch):
+    """Stale entries in state['attempts'] are pruned when their msg_id leaves the fetch window."""
+    _patch_recall(monkeypatch)
+    _isolate_log(monkeypatch, tmp_path)
+    _, template = _write_synthetic_config(tmp_path)
+    state_path = tmp_path / "state-t.json"
+    cfg = monitor.ChatConfig(
+        label="t",
+        chat_id="c",
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+    )
+    # Pre-seed with a stale attempt for msg_id "old-99" which won't be in the fetch
+    monitor.save_state(
+        state_path,
+        {**monitor.default_state(), "last_seen_message_id": "100", "attempts": {"old-99": 2}},
+    )
+    # Only msg_id "101" is in the fetch window
+    current_msg = msg_factory(msg_id="101", text="[Claude] self")
+
+    with (
+        patch.object(monitor, "list_messages", return_value=[current_msg]),
+        patch.object(
+            monitor.ChatConfig, "state_file", new_callable=lambda: property(lambda self: state_path)
+        ),
+    ):
+        monitor.run_once_for_chat(cfg, now=now, dry_run=False)
+
+    final = monitor.load_state(state_path)
+    assert "old-99" not in final.get("attempts", {})
+
+
+def test_heartbeat_file_written(tmp_path, monkeypatch):
+    """main_loop writes a heartbeat file each poll cycle."""
+    _isolate_log(monkeypatch, tmp_path)
+    heartbeat = tmp_path / "heartbeat"
+    monkeypatch.setattr(monitor, "HEARTBEAT_FILE", heartbeat)
+    monkeypatch.setattr(monitor, "_shutdown_requested", False)
+
+    _, template = _write_synthetic_config(tmp_path)
+    cfg = monitor.ChatConfig(
+        label="t",
+        chat_id="c",
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+    )
+
+    call_count = 0
+
+    def fake_run_once(chat_cfg, *, now, dry_run):
+        nonlocal call_count
+        call_count += 1
+        monitor._shutdown_requested = True
+
+    with (
+        patch.object(monitor, "_startup_auth", return_value=True),
+        patch.object(monitor, "run_once_for_chat", side_effect=fake_run_once),
+        patch.object(monitor, "load_state", return_value=monitor.default_state()),
+        patch.object(monitor, "sd_notify"),
+    ):
+        monitor.main_loop([cfg], dry_run=False, poll_seconds=1)
+
+    assert heartbeat.exists()
+    monkeypatch.setattr(monitor, "_shutdown_requested", False)
