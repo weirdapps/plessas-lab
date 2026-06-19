@@ -15,7 +15,7 @@ All repos live flat under `~/SourceCode/`. VPS mirror at same path via `ssh vps`
 | etoro_statement | py | pytest | ruff+mypy | gha | master | no | priv |
 | etoro_tickers | ts | — | — | gha | master | no | pub |
 | etorotrade | py | pytest | ruff+mypy | gha | master | yes | priv |
-| health | ts | vitest | eslint | gha | master | no | pub |
+| health | ts | vitest | eslint | gha | master | no | priv |
 | loans | py | pytest | ruff+mypy | gha | master | no | priv |
 | mockups | py | pytest | — | gha | master | no | priv |
 | news | py | pytest | ruff | gha | master | yes | priv |
@@ -29,7 +29,7 @@ All repos live flat under `~/SourceCode/`. VPS mirror at same path via `ssh vps`
 | sch-mail | py | — | — | — | master | no | priv |
 | second-brain | py | pytest | ruff | gha | master | yes | priv |
 | teams-access | ts | vitest | eslint | gha | master | no | priv |
-| telegram-bot | ts | vitest | eslint | gha | master | no | priv |
+| telegram-bot | ts | vitest | eslint | gha | master | no | pub |
 | whatsapp-mcp | py/go | — | — | — | main | no | priv |
 
 Legend: gha = GitHub Actions, py = Python, ts = TypeScript, sh = Shell

@@ -55,10 +55,19 @@ ssh vps 'systemctl --user --failed --no-pager' 2>&1
 ### Step 4 — Journal Errors (last 24h)
 
 ```bash
-ssh vps 'journalctl --user --since "24 hours ago" --priority=err --no-pager -o short-monotonic 2>&1 | tail -50'
+ssh vps 'journalctl --user --since "24 hours ago" --priority=err --no-pager -o short-iso 2>&1 | tail -50'
 ```
 
 Count errors per unit. Flag units with >5 errors as YELLOW.
+
+**Be timestamp-aware and recovery-aware.** The `--since "24 hours ago"` window
+already excludes stale errors — keep it. But also: if a unit errored earlier in
+the window and then SUCCEEDED on a later run (check its latest invocation), it
+has recovered — report it as YELLOW "transient, recovered" with the last-error
+time, not RED. A unit is only RED if its **most recent** run failed. Distinguish
+fatal errors from benign noise (e.g. missing `libsecret` on a headless box, MSAL
+keyring warnings) — these recur every run but don't break the job; note them as
+informational, not failures.
 
 ### Step 5 — Token Freshness
 

@@ -68,9 +68,22 @@ For each log file:
 
 ```bash
 for f in ~/Library/Logs/token-sync-vps.err ~/Library/Logs/automation-health.err ~/Library/Logs/gcloud-auto-login.err; do
-  [ -f "$f" ] && echo "=== $(basename "$f") ===" && tail -5 "$f" 2>/dev/null
+  [ -f "$f" ] && echo "=== $(basename "$f") (mtime: $(stat -f %Sm "$f")) ===" && tail -5 "$f" 2>/dev/null
 done
 ```
+
+**CRITICAL — be timestamp-aware. Many `.err` files are NOT rotated, so they
+accumulate stale errors forever.** Do NOT count old, resolved errors as
+current problems. Before flagging a log:
+
+1. Check the file's mtime — if it hasn't been written in >24h, its errors are
+   stale; report GREEN with a note, not RED/YELLOW.
+2. Cross-check against the agent's own `last exit code` and recent `.log`
+   success lines — if the agent is currently exiting 0 and the matching `.log`
+   shows recent success, the `.err` entries are historical. Report the most
+   recent error's timestamp, not the raw count.
+3. Watch for line-number drift: if an `.err` references a script line that no
+   longer matches the current script, the error predates the latest edit — stale.
 
 ### Step 4 — Token Sync Pipeline Verification
 

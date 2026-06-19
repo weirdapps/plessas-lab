@@ -40,12 +40,27 @@ Flag repos where:
 
 Only for repos that have a test runner configured in the registry.
 
-**Python (pytest):**
+**CRITICAL — use each repo's own virtualenv, not system Python.** Most repos
+have their deps installed in a project venv, NOT in the system interpreter.
+Running bare `python -m pytest` produces false failures (missing
+pytest-asyncio, pytesseract, flask, etc. that ARE installed in the venv).
+Before running tests, resolve the interpreter in this order and use the first
+that exists:
+
+1. `~/SourceCode/<repo>/.venv/bin/python`
+2. `~/.venvs/<repo>/bin/python` (shared-venv layout)
+3. the interpreter named in CI (`.github/workflows/*.yml`) or `poetry env info -p`
+4. system `python3` (last resort — if used, note `"interpreter": "system"` in
+   the repo's JSON so a missing-dep failure isn't misread as a code regression)
 
 ```bash
 cd ~/SourceCode/<repo>
-python -m pytest --tb=line -q --no-header 2>&1 | tail -5
+PY=.venv/bin/python; [ -x "$PY" ] || PY=~/.venvs/$(basename "$PWD")/bin/python; [ -x "$PY" ] || PY=python3
+"$PY" -m pytest --tb=line -q --no-header 2>&1 | tail -5
 ```
+
+If tests fail ONLY due to a missing import/module, classify as YELLOW
+`"env-gap"` (not RED) — it's an environment issue, not a code regression.
 
 Timeout: 120 seconds per repo. If it hangs, kill and mark YELLOW "timeout".
 
