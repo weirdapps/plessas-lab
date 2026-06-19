@@ -7,6 +7,28 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
 
+  # Root package.json (vitest test harness + shared tooling)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - npm
+    groups:
+      development-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      production-dependencies:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+
   # Each plugin keeps its own package.json; dependabot must be told about each one
   - package-ecosystem: npm
     directory: /plugins/manage-gmail/skills/manage-gmail/scripts
