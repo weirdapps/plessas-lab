@@ -1,0 +1,22 @@
+{
+  "name": "ops-sync",
+  "description": "Infrastructure health and sync engine — scans all repos (local Mac + VPS + GitHub) for git state, tests, lint, CI/CD, systemd timers, LaunchAgents, and token freshness. Parallel multi-agent architecture with fix capabilities. Commands: /ops-sync (full scan), /ops-status (quick dashboard), /ops-fix (remediation), /ops-doctor (deep diagnostic).",
+  "version": "1.0.0",
+  "author": {
+    "name": "weirdapps"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ops",
+    "sync",
+    "infrastructure",
+    "health",
+    "git",
+    "systemd",
+    "launchd",
+    "github-actions",
+    "devops",
+    "multi-agent"
+  ],
+  "commands": "./commands"
+}

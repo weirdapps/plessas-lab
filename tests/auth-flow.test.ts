@@ -84,9 +84,15 @@ describe('Auth Flow & Token Security', () => {
       expect(() => createClient()).not.toThrow();
     });
 
-    it('should throw clear error when GEMINI_API_KEY is missing', async () => {
-      // Setup: Explicitly delete env var
+    it('should throw clear error when no credentials are configured', async () => {
+      // Setup: Explicitly delete env var, and clear any Vertex routing so the
+      // API-key path is the only option (createClient now prefers Vertex AI
+      // when a GCP project is configured).
       delete process.env.GEMINI_API_KEY;
+      delete process.env.GOOGLE_CLOUD_PROJECT;
+      delete process.env.VERTEX_SDK_PROJECT;
+      delete process.env.ANTHROPIC_VERTEX_PROJECT_ID;
+      delete process.env.GOOGLE_GENAI_USE_VERTEXAI;
 
       // Import fresh module
       const { createClient } = await import(
@@ -94,10 +100,17 @@ describe('Auth Flow & Token Security', () => {
       );
 
       // Act & Assert: Should throw with clear message
-      expect(() => createClient()).toThrow(/GEMINI_API_KEY environment variable/);
+      expect(() => createClient()).toThrow(/image-generation credentials/);
     });
 
     it('should reject empty/whitespace-only tokens', async () => {
+      // Clear Vertex routing so the API-key validation path is exercised
+      // (createClient prefers Vertex AI when a GCP project is configured).
+      delete process.env.GOOGLE_CLOUD_PROJECT;
+      delete process.env.VERTEX_SDK_PROJECT;
+      delete process.env.ANTHROPIC_VERTEX_PROJECT_ID;
+      delete process.env.GOOGLE_GENAI_USE_VERTEXAI;
+
       // Setup: Empty string token
       process.env.GEMINI_API_KEY = '';
 
@@ -106,7 +119,7 @@ describe('Auth Flow & Token Security', () => {
       );
 
       // Act & Assert: Empty string should fail
-      expect(() => createClient()).toThrow(/GEMINI_API_KEY environment variable/);
+      expect(() => createClient()).toThrow(/image-generation credentials/);
 
       // Setup: Whitespace-only token
       vi.resetModules();
@@ -115,7 +128,7 @@ describe('Auth Flow & Token Security', () => {
       const { createClient: createClient2 } = await import(
         '../plugins/manage-nano-banana/skills/manage-nano-banana/tools/nano-banana-client.ts?v2'
       );
-      expect(() => createClient2()).toThrow(/GEMINI_API_KEY environment variable/);
+      expect(() => createClient2()).toThrow(/image-generation credentials/);
     });
   });
 
