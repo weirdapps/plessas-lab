@@ -1,46 +1,15 @@
 name: Monthly Dependency Refresh
-
-"on":
+'on':
   schedule:
     - cron: '11 7 22 * *'
   workflow_dispatch: {}
-
 permissions:
   contents: write
   pull-requests: write
-
-concurrency:
-  group: deps-refresh
-  cancel-in-progress: false
-
 jobs:
   refresh:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Refresh dependencies
-        run: |
-          npm update
-          npm install
-
-      - name: Validate
-        run: npm test
-
-      - name: Open PR with refreshed lockfile
-        # v7.0.11 (peter-evans/create-pull-request)
-        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676
-        with:
-          token: ${{ secrets.PUSH_PAT || github.token }}
-          branch: deps/monthly-refresh
-          delete-branch: true
-          commit-message: 'deps: monthly dependency refresh'
-          title: 'deps: monthly dependency refresh'
-          body: |
-            Automated monthly `npm update`. Validation (`npm test`) passed on this branch.
-            Review and merge if green.
-          labels: dependencies
+    uses: weirdapps/shared-workflows/.github/workflows/deps-refresh.yml@main
+    with:
+      node_version: '20'
+      gate_cmd: npm test
+    secrets: inherit
