@@ -1,14 +1,11 @@
-"""Teams chat monitor — experimental.
+"""Multi-service chat monitor.
 
-Polls one or more Microsoft Teams chats and posts ``[Claude]``-prefixed
-replies when an LLM gate decides adding context is genuinely useful.
+Polls one or more chat services (Teams, WhatsApp, ...) and posts
+``[Claude]``-prefixed replies when an LLM gate decides adding context
+is genuinely useful.
 
-Per-chat configuration (id, prompt template, rate limits, dry-run) lives
-in ``chats.json`` next to this file.
-
-See docs/superpowers/specs/2026-05-05-teams-digital-nomads-monitor-design.md
-for the original (single-chat) design. The multi-chat refactor preserves
-the single-chat behaviour for ``digital_claude`` and adds per-chat state.
+Per-chat configuration (service, id, prompt template, rate limits,
+dry-run) lives in ``chats.json`` next to this file.
 """
 
 from __future__ import annotations
@@ -20,14 +17,22 @@ import os
 import re
 import signal
 import socket
+import sqlite3
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
+from abc import ABC, abstractmethod
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
+
+# ---------------------------------------------------------------------------
+# Globals
+# ---------------------------------------------------------------------------
 
 _shutdown_requested = False
 
@@ -35,6 +40,19 @@ _shutdown_requested = False
 def _request_shutdown(_signum: int, _frame: object) -> None:
     global _shutdown_requested
     _shutdown_requested = True
+
+
+# ---------------------------------------------------------------------------
+# Exceptions
+# ---------------------------------------------------------------------------
+
+
+class AdapterError(Exception):
+    """Base for service adapter errors."""
+
+
+class AdapterAuthError(AdapterError):
+    """Auth failure — caller should attempt renewal or bail."""
 
 
 class TeamsCliError(Exception):
@@ -54,9 +72,17 @@ class TeamsCliAuthRequired(TeamsCliError):
         super().__init__(exit_code=4, stderr=stderr, retryable=False)
 
 
+class WhatsAppBridgeError(AdapterError):
+    """WhatsApp bridge failure (SQLite or HTTP)."""
+
+
 class ClaudeCliError(Exception):
     """claude CLI failure (timeout, non-zero, missing binary)."""
 
+
+# ---------------------------------------------------------------------------
+# Constants & paths
+# ---------------------------------------------------------------------------
 
 HERE = Path(__file__).resolve().parent
 STATE_DIR = Path("~/.claude/chat-watch").expanduser()
@@ -67,6 +93,11 @@ STOP_FILE = STATE_DIR / "STOP"
 HEARTBEAT_FILE = STATE_DIR / "heartbeat"
 CLAUDE_TAG = "[Claude] "
 DEFAULT_POLL_SECONDS = 30
+
+
+# ---------------------------------------------------------------------------
+# Systemd / process management
+# ---------------------------------------------------------------------------
 
 
 def sd_notify(msg: str) -> None:
@@ -86,21 +117,10 @@ def sd_notify(msg: str) -> None:
 
 
 def migrate_legacy_state_dir() -> bool:
-    """One-shot migration from ~/.claude/teams-monitor/ -> ~/.claude/chat-watch/.
-
-    The plugin was renamed from teams-monitor -> chat-watch on 2026-05-09. Existing
-    installs have config + state under the old path. This function moves the dir
-    on first run if (and only if): legacy exists AND new path does not.
-
-    Idempotent. Logs to stderr (cannot use log_event because LOG_FILE may not
-    exist yet — and would point to the new dir before migration completes).
-
-    Returns True if migration ran, False if no migration needed.
-    """
+    """One-shot migration from ~/.claude/teams-monitor/ -> ~/.claude/chat-watch/."""
     if not LEGACY_STATE_DIR.exists():
         return False
     if STATE_DIR.exists():
-        # Both exist — migration already happened or operator created new path manually
         return False
     try:
         LEGACY_STATE_DIR.rename(STATE_DIR)
@@ -120,6 +140,323 @@ def migrate_legacy_state_dir() -> bool:
         return False
 
 
+# ---------------------------------------------------------------------------
+# NormalizedMessage — canonical message type across all services
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class NormalizedMessage:
+    cursor_key: str
+    msg_id: str
+    sender: str
+    body: str
+    composed_at: datetime
+    is_self: bool
+    service: str
+    thread_id: str | None = None
+
+
+def _thread_key(msg: NormalizedMessage) -> str:
+    return msg.thread_id or msg.msg_id
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _strip_html(html: str) -> str:
+    """Cheap HTML-to-text."""
+    return _HTML_TAG_RE.sub("", html or "")
+
+
+def is_self_message(body: str) -> bool:
+    """True if the visible body text starts with [Claude] (case-insensitive)."""
+    text = _strip_html(body).lstrip()
+    return text[:8].lower().startswith("[claude]")
+
+
+def _parse_ts(ts: str) -> datetime:
+    """Parse ISO 8601 timestamp into aware UTC datetime."""
+    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
+# ---------------------------------------------------------------------------
+# ServiceAdapter — abstract base for chat services
+# ---------------------------------------------------------------------------
+
+
+class ServiceAdapter(ABC):
+    name: str = ""
+    supports_auth_renewal: bool = False
+
+    @abstractmethod
+    def fetch_messages(self, chat_id: str, limit: int = 25) -> list[NormalizedMessage]: ...
+
+    @abstractmethod
+    def send_message(self, chat_id: str, text: str) -> None: ...
+
+    @abstractmethod
+    def messages_after_cursor(
+        self, msgs: list[NormalizedMessage], cursor: str | None
+    ) -> list[NormalizedMessage]: ...
+
+    @abstractmethod
+    def cold_start_cursor(self, msgs: list[NormalizedMessage]) -> str: ...
+
+    def check_auth(self) -> None:  # noqa: B027
+        """Raise AdapterAuthError if auth is broken."""
+
+    def renew_auth(self) -> bool:
+        """Attempt to renew auth. Returns True on success."""
+        return True
+
+
+# ---------------------------------------------------------------------------
+# Teams CLI helpers (module-level for backward-compat test mocking)
+# ---------------------------------------------------------------------------
+
+
+def run_teams_cli(args: list[str], timeout: int = 60) -> dict[str, Any]:
+    """Invoke teams-cli with given args. Always passes --no-auto-reauth."""
+    full_args = ["teams-cli"] + args
+    if "--no-auto-reauth" not in full_args:
+        full_args.append("--no-auto-reauth")
+    proc = subprocess.run(full_args, capture_output=True, text=True, timeout=timeout)
+    if proc.returncode == 4:
+        raise TeamsCliAuthRequired(proc.stderr)
+    if proc.returncode == 5:
+        raise TeamsCliError(5, proc.stderr, retryable=True)
+    if proc.returncode != 0:
+        raise TeamsCliError(proc.returncode, proc.stderr, retryable=False)
+    return json.loads(proc.stdout) if proc.stdout.strip() else {}
+
+
+def list_messages(chat_id: str, page_size: int = 50) -> list[dict[str, Any]]:
+    """Return chat messages newest-first (Teams)."""
+    result = run_teams_cli(["list-messages", "--chat", chat_id, "--page-size", str(page_size)])
+    messages = result.get("messages", []) if isinstance(result, dict) else result
+    return cast(list[dict[str, Any]], messages)
+
+
+def send_message(chat_id: str, html_body: str) -> dict[str, Any]:
+    """Post a message to a Teams chat."""
+    return run_teams_cli(["send-message", "--chat", chat_id, "--html", html_body])
+
+
+def _try_auth_renew() -> bool:
+    """Silently renew teams-cli auth. Returns True on success."""
+    try:
+        subprocess.run(
+            ["teams-cli", "auth-renew", "--no-auto-reauth"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        run_teams_cli(["auth-check"])
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+# ---------------------------------------------------------------------------
+# TeamsAdapter
+# ---------------------------------------------------------------------------
+
+
+class TeamsAdapter(ServiceAdapter):
+    name = "teams"
+    supports_auth_renewal = True
+
+    def fetch_messages(self, chat_id: str, limit: int = 25) -> list[NormalizedMessage]:
+        raw_msgs = list_messages(chat_id, page_size=limit)
+        return [self._normalize(m) for m in raw_msgs]
+
+    def _normalize(self, msg: dict[str, Any]) -> NormalizedMessage:
+        body_html = msg.get("content", "")
+        ts_str = msg.get("composetime", "")
+        return NormalizedMessage(
+            cursor_key=msg["id"],
+            msg_id=msg["id"],
+            sender=msg.get("imdisplayname", "?"),
+            body=_strip_html(body_html).strip(),
+            composed_at=_parse_ts(ts_str) if ts_str else datetime.now(UTC),
+            is_self=is_self_message(body_html),
+            service="teams",
+            thread_id=msg.get("_thread_id"),
+        )
+
+    def send_message(self, chat_id: str, text: str) -> None:
+        send_message(chat_id, text)
+
+    def messages_after_cursor(
+        self, msgs: list[NormalizedMessage], cursor: str | None
+    ) -> list[NormalizedMessage]:
+        if cursor is None:
+            return []
+        new = [m for m in msgs if m.cursor_key > cursor]
+        new.sort(key=lambda m: m.composed_at)
+        return new
+
+    def cold_start_cursor(self, msgs: list[NormalizedMessage]) -> str:
+        return msgs[0].cursor_key
+
+    def check_auth(self) -> None:
+        try:
+            run_teams_cli(["auth-check"])
+        except TeamsCliAuthRequired as exc:
+            raise AdapterAuthError(str(exc)) from exc
+
+    def renew_auth(self) -> bool:
+        return _try_auth_renew()
+
+
+# ---------------------------------------------------------------------------
+# WhatsAppAdapter
+# ---------------------------------------------------------------------------
+
+_WHATSAPP_DEFAULT_DB = "~/SourceCode/whatsapp-mcp/whatsapp-bridge/store/messages.db"
+_WHATSAPP_DEFAULT_API = "http://localhost:8080"
+
+
+class WhatsAppAdapter(ServiceAdapter):
+    name = "whatsapp"
+    supports_auth_renewal = False
+
+    def __init__(self, service_config: dict[str, Any] | None = None):
+        cfg = service_config or {}
+        self._db_path = Path(cfg.get("db_path", _WHATSAPP_DEFAULT_DB)).expanduser()
+        self._api_url = cfg.get("api_url", _WHATSAPP_DEFAULT_API).rstrip("/")
+        self._conn: sqlite3.Connection | None = None
+
+    def _get_conn(self) -> sqlite3.Connection:
+        if self._conn is None:
+            self._conn = sqlite3.connect(str(self._db_path), timeout=5)
+            self._conn.row_factory = sqlite3.Row
+        return self._conn
+
+    def _resolve_sender(self, sender_jid: str) -> str:
+        try:
+            conn = self._get_conn()
+            phone = sender_jid.split("@")[0] if "@" in sender_jid else sender_jid
+            row = conn.execute(
+                "SELECT name FROM chats WHERE jid LIKE ?", (f"%{phone}%",)
+            ).fetchone()
+            return row["name"] if row and row["name"] else sender_jid
+        except Exception:  # noqa: BLE001
+            return sender_jid
+
+    def fetch_messages(self, chat_id: str, limit: int = 25) -> list[NormalizedMessage]:
+        try:
+            conn = self._get_conn()
+        except (sqlite3.Error, OSError) as exc:
+            raise WhatsAppBridgeError(f"Cannot open WhatsApp DB: {exc}") from exc
+        try:
+            rows = conn.execute(
+                "SELECT id, sender, content, timestamp, is_from_me "
+                "FROM messages WHERE chat_jid = ? AND content != '' "
+                "ORDER BY timestamp DESC LIMIT ?",
+                (chat_id, limit),
+            ).fetchall()
+        except sqlite3.Error as exc:
+            self._conn = None
+            raise WhatsAppBridgeError(f"WhatsApp DB query failed: {exc}") from exc
+        return [self._normalize(row) for row in rows]
+
+    def _normalize(self, row: sqlite3.Row) -> NormalizedMessage:
+        content = row["content"] or ""
+        is_from_me = bool(row["is_from_me"])
+        sender_jid = row["sender"] or ""
+        ts_str = row["timestamp"] or ""
+        return NormalizedMessage(
+            cursor_key=ts_str,
+            msg_id=row["id"],
+            sender="Me" if is_from_me else self._resolve_sender(sender_jid),
+            body=content.strip(),
+            composed_at=_parse_ts(ts_str) if ts_str else datetime.now(UTC),
+            is_self=is_from_me or is_self_message(content),
+            service="whatsapp",
+        )
+
+    def send_message(self, chat_id: str, text: str) -> None:
+        data = json.dumps({"recipient": chat_id, "message": text}).encode()
+        req = urllib.request.Request(
+            f"{self._api_url}/api/send",
+            data=data,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                result = json.loads(resp.read())
+                if not result.get("success", False):
+                    raise WhatsAppBridgeError(f"Send failed: {result.get('message', 'unknown')}")
+        except urllib.error.URLError as exc:
+            raise WhatsAppBridgeError(f"WhatsApp bridge unreachable: {exc}") from exc
+
+    def messages_after_cursor(
+        self, msgs: list[NormalizedMessage], cursor: str | None
+    ) -> list[NormalizedMessage]:
+        if cursor is None:
+            return []
+        cursor_dt = _parse_ts(cursor)
+        new = [m for m in msgs if m.composed_at > cursor_dt]
+        new.sort(key=lambda m: m.composed_at)
+        return new
+
+    def cold_start_cursor(self, msgs: list[NormalizedMessage]) -> str:
+        return msgs[0].cursor_key
+
+    def check_auth(self) -> None:
+        if not self._db_path.exists():
+            raise AdapterAuthError(f"WhatsApp DB not found: {self._db_path}")
+        try:
+            conn = self._get_conn()
+            conn.execute("SELECT COUNT(*) FROM messages LIMIT 1")
+        except Exception as exc:  # noqa: BLE001
+            self._conn = None
+            raise AdapterAuthError(f"WhatsApp DB not readable: {exc}") from exc
+
+    def renew_auth(self) -> bool:
+        return True
+
+
+# ---------------------------------------------------------------------------
+# Adapter registry
+# ---------------------------------------------------------------------------
+
+_adapter_cache: dict[str, ServiceAdapter] = {}
+
+_ADAPTER_CLASSES: dict[str, type[ServiceAdapter]] = {
+    "teams": TeamsAdapter,
+    "whatsapp": WhatsAppAdapter,
+}
+
+
+def get_adapter(service: str, service_config: dict[str, Any] | None = None) -> ServiceAdapter:
+    if service in _adapter_cache:
+        return _adapter_cache[service]
+    cls = _ADAPTER_CLASSES.get(service)
+    if cls is None:
+        raise ValueError(f"Unknown service: {service!r}. Available: {', '.join(_ADAPTER_CLASSES)}")
+    if cls is WhatsAppAdapter:
+        adapter = cls(service_config)  # type: ignore[call-arg]
+    else:
+        adapter = cls()
+    _adapter_cache[service] = adapter
+    return adapter
+
+
+# ---------------------------------------------------------------------------
+# ChatConfig
+# ---------------------------------------------------------------------------
+
+
 @dataclass(frozen=True)
 class ChatConfig:
     """Per-chat policy resolved from chats.json."""
@@ -130,6 +467,8 @@ class ChatConfig:
     max_replies_per_hour: int
     per_thread_cooldown_minutes: int
     dry_run: bool
+    service: str = "teams"
+    service_config: dict[str, Any] = field(default_factory=dict)
 
     @property
     def state_file(self) -> Path:
@@ -137,12 +476,7 @@ class ChatConfig:
 
 
 def load_chat_configs(path: Path = DEFAULT_CONFIG_PATH) -> list[ChatConfig]:
-    """Load and validate chat configurations from JSON.
-
-    Relative ``prompt_template`` paths resolve against the directory containing
-    ``path`` — this lets the personal config + prompts live together under
-    ``~/.claude/teams-monitor/`` while the repo only ships sanitized examples.
-    """
+    """Load and validate chat configurations from JSON."""
     if not path.exists():
         raise FileNotFoundError(
             f"chats.json not found at {path}. Copy chats.example.json from the "
@@ -167,6 +501,12 @@ def load_chat_configs(path: Path = DEFAULT_CONFIG_PATH) -> list[ChatConfig]:
         template_path = raw_template if raw_template.is_absolute() else config_dir / raw_template
         if not template_path.exists():
             raise ValueError(f"{path}: prompt template not found: {template_path}")
+        service = entry.get("service", "teams")
+        if service not in _ADAPTER_CLASSES:
+            raise ValueError(
+                f"{path}: unknown service '{service}' for chat '{label}'. "
+                f"Available: {', '.join(_ADAPTER_CLASSES)}"
+            )
         configs.append(
             ChatConfig(
                 label=label,
@@ -175,15 +515,25 @@ def load_chat_configs(path: Path = DEFAULT_CONFIG_PATH) -> list[ChatConfig]:
                 max_replies_per_hour=int(entry.get("max_replies_per_hour", 5)),
                 per_thread_cooldown_minutes=int(entry.get("per_thread_cooldown_minutes", 10)),
                 dry_run=bool(entry.get("dry_run", False)),
+                service=service,
+                service_config=entry.get("service_config", {}),
             )
         )
     return configs
 
 
+# ---------------------------------------------------------------------------
+# State management
+# ---------------------------------------------------------------------------
+
+_CURSOR_KEY = "last_seen_cursor"
+_LEGACY_CURSOR_KEY = "last_seen_message_id"
+
+
 def default_state() -> dict[str, Any]:
     return {
         "first_run_at": None,
-        "last_seen_message_id": None,
+        _CURSOR_KEY: None,
         "replies": [],
         "attempts": {},
     }
@@ -194,9 +544,14 @@ def load_state(path: Path) -> dict[str, Any]:
         return default_state()
     try:
         with path.open() as f:
-            return cast(dict[str, Any], json.load(f))
+            state = cast(dict[str, Any], json.load(f))
     except (json.JSONDecodeError, OSError):
         return default_state()
+    if _LEGACY_CURSOR_KEY in state and _CURSOR_KEY not in state:
+        state[_CURSOR_KEY] = state.pop(_LEGACY_CURSOR_KEY)
+    if _CURSOR_KEY not in state:
+        state[_CURSOR_KEY] = None
+    return state
 
 
 def save_state(path: Path, state: dict[str, Any]) -> None:
@@ -206,26 +561,15 @@ def save_state(path: Path, state: dict[str, Any]) -> None:
     tmp.rename(path)
 
 
-_HTML_TAG_RE = re.compile(r"<[^>]+>")
+# Backward compat: tests reference last_seen_message_id on default_state()
+# Keep it accessible via the legacy key as well
+def _state_cursor(state: dict[str, Any]) -> str | None:
+    return state.get(_CURSOR_KEY) or state.get(_LEGACY_CURSOR_KEY)
 
 
-def _strip_html(html: str) -> str:
-    """Cheap HTML-to-text. Sufficient for self-loop check; not for prompt context."""
-    return _HTML_TAG_RE.sub("", html or "")
-
-
-def is_self_message(body: str) -> bool:
-    """True if the visible body text starts with [Claude] (case-insensitive)."""
-    text = _strip_html(body).lstrip()
-    return text[:8].lower().startswith("[claude]")
-
-
-def _parse_ts(ts: str) -> datetime:
-    """Parse ISO 8601 timestamp into aware UTC datetime."""
-    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=UTC)
-    return dt.astimezone(UTC)
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
 
 
 def prune_old_replies(state: dict[str, Any], now: datetime) -> None:
@@ -253,14 +597,15 @@ def rate_limit_ok(
     return True
 
 
-def parse_decision(raw: str) -> dict[str, Any] | None:
-    """Extract a {"reply": bool, ...} JSON object from LLM output.
+# ---------------------------------------------------------------------------
+# LLM gate — decision parsing
+# ---------------------------------------------------------------------------
 
-    Tolerates leading/trailing prose. Returns None on garbage or missing keys.
-    """
+
+def parse_decision(raw: str) -> dict[str, Any] | None:
+    """Extract a {"reply": bool, ...} JSON object from LLM output."""
     if not raw:
         return None
-    # Find the first '{' and the matching last '}' — naive but works for our shape
     start = raw.find("{")
     end = raw.rfind("}")
     if start == -1 or end == -1 or end <= start:
@@ -279,64 +624,48 @@ def parse_decision(raw: str) -> dict[str, Any] | None:
     return decision
 
 
+# ---------------------------------------------------------------------------
+# Context builders
+# ---------------------------------------------------------------------------
+
 MAX_THREAD_MESSAGES = 20
 MAX_CHAT_24H_MESSAGES = 30
 
 
 def extract_thread_messages(
-    all_msgs: list[dict[str, Any]], new_msg: dict[str, Any]
-) -> list[dict[str, Any]]:
-    """Return messages with same threadId/replyToId chain as new_msg, oldest first, excluding new_msg itself."""
+    all_msgs: list[NormalizedMessage], new_msg: NormalizedMessage
+) -> list[NormalizedMessage]:
+    """Return messages with same thread key as new_msg, oldest first."""
     new_thread = _thread_key(new_msg)
-    siblings = [m for m in all_msgs if m["id"] != new_msg["id"] and _thread_key(m) == new_thread]
-    siblings.sort(key=lambda m: m.get("composedDateTime", ""))
+    siblings = [m for m in all_msgs if m.msg_id != new_msg.msg_id and _thread_key(m) == new_thread]
+    siblings.sort(key=lambda m: m.composed_at)
     return siblings[-MAX_THREAD_MESSAGES:]
 
 
 def extract_chat_24h(
-    all_msgs: list[dict[str, Any]], new_msg: dict[str, Any], now: datetime
-) -> list[dict[str, Any]]:
-    """Return messages from the last 24h before now, oldest first, excluding new_msg itself."""
+    all_msgs: list[NormalizedMessage], new_msg: NormalizedMessage, now: datetime
+) -> list[NormalizedMessage]:
+    """Return messages from the last 24h, oldest first, excluding new_msg."""
     cutoff = now - timedelta(hours=24)
-    out = []
-    for m in all_msgs:
-        if m["id"] == new_msg["id"]:
-            continue
-        ts = m.get("composetime")
-        if not ts:
-            continue
-        if _parse_ts(ts) >= cutoff:
-            out.append(m)
-    out.sort(key=lambda m: m.get("composetime", ""))
+    out = [m for m in all_msgs if m.msg_id != new_msg.msg_id and m.composed_at >= cutoff]
+    out.sort(key=lambda m: m.composed_at)
     return out[-MAX_CHAT_24H_MESSAGES:]
 
 
-def _thread_key(msg: dict[str, Any]) -> str:
-    """A stable thread identifier from a teams-cli message.
-
-    Real Teams group chats have NO threading fields, so ``_thread_key`` falls
-    back to the message's own ``id`` — meaning the per-thread cooldown is a
-    no-op in production (every message is its own one-message "thread"). The
-    optional ``_thread_id`` field is a test-only hook for exercising the
-    cooldown logic in unit tests.
-    """
-    return str(msg.get("_thread_id") or msg["id"])
-
-
-def format_messages(msgs: list[dict[str, Any]]) -> str:
-    """Format a list of messages as a plain-text block: '<sender>: <text>'."""
+def format_messages(msgs: list[NormalizedMessage]) -> str:
+    """Format messages as plain-text block: '<sender>: <text>'."""
     lines = []
     for m in msgs:
-        sender = m.get("imdisplayname") or "?"
-        body = m.get("content") or ""
-        text = _strip_html(body).strip()
-        # Collapse whitespace
-        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r"\s+", " ", m.body).strip()
         if not text:
             continue
-        lines.append(f"{sender}: {text}")
+        lines.append(f"{m.sender}: {text}")
     return "\n".join(lines) if lines else "(none)"
 
+
+# ---------------------------------------------------------------------------
+# Second-brain integration
+# ---------------------------------------------------------------------------
 
 SECOND_BRAIN_SRC = Path("~/SourceCode/second-brain").expanduser()
 SECOND_BRAIN_DB = SECOND_BRAIN_SRC / "data" / "brain.db"
@@ -395,6 +724,11 @@ def _format_recall(hits: dict[str, Any]) -> str:
     return "\n".join(lines) if lines else "(no hits)"
 
 
+# ---------------------------------------------------------------------------
+# Prompt builder
+# ---------------------------------------------------------------------------
+
+
 def build_prompt(
     template_path: Path,
     *,
@@ -417,18 +751,17 @@ def build_prompt(
     )
 
 
+# ---------------------------------------------------------------------------
+# LLM gate — invocation
+# ---------------------------------------------------------------------------
+
 CLAUDE_TIMEOUT_SECONDS = 240
-# Opus for the gate + reply drafting: this daemon auto-sends replies in Teams
-# under Plessas's name, so judgement quality carries reputational stakes.
-# The launchd plist pins CLOUD_ML_REGION=eu (VERTEX_REGION_HEAVY) to match.
-# Use the exact provisioned id (NOT the bare "opus" alias, which 429s on an
-# unprovisioned eu base bucket); resolved from the same central env the plist sources.
 CLAUDE_MODEL = os.environ.get("VERTEX_MODEL_HEAVY", "claude-opus-4-8[1m]")
 MAX_LLM_ATTEMPTS = 3
 
 
 def notify_user(title: str, message: str) -> None:
-    """Best-effort notification. macOS uses osascript; Linux is a no-op (log_event suffices)."""
+    """Best-effort notification. macOS uses osascript; Linux is a no-op."""
     if sys.platform != "darwin":
         return
     safe_msg = message.replace('"', "'")[:200]
@@ -444,11 +777,6 @@ def notify_user(title: str, message: str) -> None:
 
 
 def _claude_once(prompt: str, model: str, region: str | None, timeout: int) -> dict[str, Any]:
-    """Run claude once (model @ region) requesting the JSON envelope.
-
-    Returns the parsed --output-format json envelope. Raise ClaudeCliError if the CLI
-    times out, is missing, or produces no parseable envelope.
-    """
     env = dict(os.environ)
     if region:
         env["CLOUD_ML_REGION"] = region
@@ -477,13 +805,7 @@ def _claude_once(prompt: str, model: str, region: str | None, timeout: int) -> d
 
 
 def invoke_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT_SECONDS) -> str:
-    """Invoke claude (Opus 4.8 @ eu) and return the reply text.
-
-    On a spurious 'anthropic policy' refusal or an API error (e.g. a 429), auto-downgrade
-    ONCE to the Opus 4.6 / europe-west1 fallback tier (model AND region together — 4.6
-    lives in europe-west1). Raise ClaudeCliError on hard failure; the caller retries up
-    to MAX_LLM_ATTEMPTS.
-    """
+    """Invoke claude with model fallback. Raise ClaudeCliError on hard failure."""
     envelope = _claude_once(prompt, CLAUDE_MODEL, os.environ.get("CLOUD_ML_REGION"), timeout)
     if envelope.get("stop_reason") == "refusal" or envelope.get("is_error"):
         fb_model = os.environ.get("VERTEX_MODEL_FALLBACK", "claude-opus-4-6[1m]")
@@ -506,31 +828,9 @@ def invoke_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT_SECONDS) -> str:
     return str(text)
 
 
-def run_teams_cli(args: list[str], timeout: int = 60) -> dict[str, Any]:
-    """Invoke teams-cli with given args. Always passes --no-auto-reauth."""
-    full_args = ["teams-cli"] + args
-    if "--no-auto-reauth" not in full_args:
-        full_args.append("--no-auto-reauth")
-    proc = subprocess.run(full_args, capture_output=True, text=True, timeout=timeout)
-    if proc.returncode == 4:
-        raise TeamsCliAuthRequired(proc.stderr)
-    if proc.returncode == 5:
-        raise TeamsCliError(5, proc.stderr, retryable=True)
-    if proc.returncode != 0:
-        raise TeamsCliError(proc.returncode, proc.stderr, retryable=False)
-    return json.loads(proc.stdout) if proc.stdout.strip() else {}
-
-
-def list_messages(chat_id: str, page_size: int = 50) -> list[dict[str, Any]]:
-    """Return chat messages newest-first."""
-    result = run_teams_cli(["list-messages", "--chat", chat_id, "--page-size", str(page_size)])
-    messages = result.get("messages", []) if isinstance(result, dict) else result
-    return cast(list[dict[str, Any]], messages)
-
-
-def send_message(chat_id: str, html_body: str) -> dict[str, Any]:
-    """Post a message to a chat. Returns the teams-cli response."""
-    return run_teams_cli(["send-message", "--chat", chat_id, "--html", html_body])
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
 
 
 def log_event(event: str, **fields: Any) -> None:
@@ -544,35 +844,34 @@ def log_event(event: str, **fields: Any) -> None:
     line = json.dumps(rec, ensure_ascii=False)
     with LOG_FILE.open("a", encoding="utf-8") as f:
         f.write(line + "\n")
-    # Also echo to stderr so the foreground operator sees it
     print(line, file=sys.stderr, flush=True)
 
 
+# ---------------------------------------------------------------------------
+# Core — process_message
+# ---------------------------------------------------------------------------
+
+
 def process_message(
-    msg: dict[str, Any],
-    all_msgs: list[dict[str, Any]],
+    msg: NormalizedMessage,
+    all_msgs: list[NormalizedMessage],
     state: dict[str, Any],
     chat_cfg: ChatConfig,
+    adapter: ServiceAdapter,
     *,
     now: datetime,
     dry_run: bool,
 ) -> bool:
-    """Decide whether to reply to msg and (if not dry-run) post the reply.
+    """Decide whether to reply and (if not dry-run) post.
 
-    Returns True if the cursor should advance past this message (handled, skipped,
-    or given up after MAX_LLM_ATTEMPTS). Returns False on transient LLM error so
-    the next poll retries the same message — preserving the chronological order
-    that thread/chat context depends on.
+    Returns True if the cursor should advance. Returns False on transient
+    LLM error so the next poll retries.
     """
-    msg_id = msg["id"]
-    body_html = msg.get("content", "")
-    sender = msg.get("imdisplayname", "?")
-    composed_at = msg.get("composetime", "")
-    new_text = _strip_html(body_html).strip()
+    msg_id = msg.msg_id
     thread_id = _thread_key(msg)
     attempts = state.setdefault("attempts", {})
 
-    if is_self_message(body_html):
+    if msg.is_self:
         log_event("skip", chat=chat_cfg.label, reason="self_message", msg_id=msg_id)
         return True
 
@@ -588,12 +887,12 @@ def process_message(
 
     thread_msgs = extract_thread_messages(all_msgs, msg)
     chat_24h_msgs = extract_chat_24h(all_msgs, msg, now=now)
-    recall_hits = fetch_recall_hits(new_text)
+    recall_hits = fetch_recall_hits(msg.body)
     prompt = build_prompt(
         chat_cfg.prompt_template_path,
-        sender=sender,
-        composed_at=composed_at,
-        new_text=new_text,
+        sender=msg.sender,
+        composed_at=msg.composed_at.isoformat(),
+        new_text=msg.body,
         thread_context=format_messages(thread_msgs),
         chat_context=format_messages(chat_24h_msgs),
         recall_context=recall_hits,
@@ -619,17 +918,16 @@ def process_message(
                 chat=chat_cfg.label,
                 msg_id=msg_id,
                 attempts=attempt_count,
-                sender=sender,
-                preview=new_text[:200],
+                sender=msg.sender,
+                preview=msg.body[:200],
             )
             notify_user(
                 title=f"chat-watch: gave up on {chat_cfg.label}",
-                message=f"{sender}: {new_text[:120]}",
+                message=f"{msg.sender}: {msg.body[:120]}",
             )
-            return True  # advance — don't deadlock on one bad message
-        return False  # transient — retry next poll
+            return True
+        return False
 
-    # Success path: clear any prior attempt count for this msg_id
     attempts.pop(msg_id, None)
 
     decision = parse_decision(raw)
@@ -641,7 +939,7 @@ def process_message(
             msg_id=msg_id,
             raw_preview=raw[:200],
         )
-        return True  # parser failures aren't retryable — same prompt → same garbage
+        return True
 
     if not decision["reply"]:
         log_event(
@@ -654,134 +952,132 @@ def process_message(
         return True
 
     text = decision["text"].strip()
-    # Strip any [Claude] the LLM added — we add it ourselves
     if text.lower().startswith("[claude]"):
         text = text[8:].lstrip(" :,-")
-    posted_html = f"{CLAUDE_TAG}{text}"
+    posted_text = f"{CLAUDE_TAG}{text}"
 
     if dry_run or chat_cfg.dry_run:
         log_event(
             "would_post",
             chat=chat_cfg.label,
             msg_id=msg_id,
-            text=posted_html,
+            text=posted_text,
             gate_reason=decision.get("reason", ""),
         )
         return True
 
     try:
-        send_message(chat_cfg.chat_id, posted_html)
-    except (TeamsCliError, TeamsCliAuthRequired) as exc:
+        adapter.send_message(chat_cfg.chat_id, posted_text)
+    except Exception as exc:  # noqa: BLE001
         log_event(
             "error",
             chat=chat_cfg.label,
             stage="send_message",
             msg_id=msg_id,
-            drafted=posted_html,
+            drafted=posted_text,
             error=str(exc),
         )
-        return True  # don't loop on send failures — auth/network needs operator action
+        return True
 
     state["replies"].append(
         {
             "ts": now.isoformat(),
             "thread_id": thread_id,
-            "text": posted_html,
+            "text": posted_text,
         }
     )
     log_event(
-        "reply_posted", chat=chat_cfg.label, msg_id=msg_id, text=posted_html, thread_id=thread_id
+        "reply_posted", chat=chat_cfg.label, msg_id=msg_id, text=posted_text, thread_id=thread_id
     )
     return True
 
 
-def run_once_for_chat(chat_cfg: ChatConfig, *, now: datetime, dry_run: bool) -> None:
+# ---------------------------------------------------------------------------
+# Core — run_once_for_chat
+# ---------------------------------------------------------------------------
+
+
+def run_once_for_chat(
+    chat_cfg: ChatConfig, adapter: ServiceAdapter, *, now: datetime, dry_run: bool
+) -> None:
     """One polling cycle for one chat: fetch, filter, process new messages."""
     state = load_state(chat_cfg.state_file)
-    msgs = list_messages(chat_cfg.chat_id, page_size=25)
+    msgs = adapter.fetch_messages(chat_cfg.chat_id, limit=25)
     if not msgs:
         log_event("poll", chat=chat_cfg.label, note="no_messages")
         return
 
-    # First-run cold start: set last_seen to newest, do not process backlog
-    if state["last_seen_message_id"] is None:
-        newest_id = msgs[0]["id"]
-        state["last_seen_message_id"] = newest_id
+    cursor = _state_cursor(state)
+
+    if cursor is None:
+        new_cursor = adapter.cold_start_cursor(msgs)
+        state[_CURSOR_KEY] = new_cursor
         state["first_run_at"] = now.isoformat()
         log_event(
             "cold_start",
             chat=chat_cfg.label,
-            last_seen_message_id=newest_id,
+            last_seen_cursor=new_cursor,
             total_in_window=len(msgs),
         )
         save_state(chat_cfg.state_file, state)
         return
 
-    last_seen = state["last_seen_message_id"]
-    # teams-cli returns newest-first; process in chronological order so context builds correctly
-    new_msgs = [m for m in msgs if m["id"] > last_seen]
-    new_msgs.sort(key=lambda m: m.get("composetime", ""))
+    new_msgs = adapter.messages_after_cursor(msgs, cursor)
 
-    # Prune stale attempt counters for messages no longer in the fetch window
     if state.get("attempts"):
-        msg_ids = {m["id"] for m in msgs}
+        msg_ids = {m.msg_id for m in msgs}
         state["attempts"] = {k: v for k, v in state["attempts"].items() if k in msg_ids}
 
     log_event("poll", chat=chat_cfg.label, new_count=len(new_msgs), total_in_window=len(msgs))
 
     for m in new_msgs:
-        advance = process_message(m, msgs, state, chat_cfg, now=now, dry_run=dry_run)
+        advance = process_message(m, msgs, state, chat_cfg, adapter, now=now, dry_run=dry_run)
         if advance:
-            state["last_seen_message_id"] = max(state["last_seen_message_id"], m["id"])
+            if m.cursor_key > (state.get(_CURSOR_KEY) or ""):
+                state[_CURSOR_KEY] = m.cursor_key
         save_state(chat_cfg.state_file, state)
         if not advance:
-            # Transient failure (e.g. LLM timeout). Stop the loop here so context
-            # for newer messages stays correct on retry. Next poll picks up where
-            # we left off; MAX_LLM_ATTEMPTS bounds how long we stall.
             break
 
 
-def replay_one(message_id: str, chat_cfg: ChatConfig) -> int:
-    """Replay one historical message through the gate. Print decision JSON. Always dry."""
-    msgs = list_messages(chat_cfg.chat_id, page_size=100)
-    target = next((m for m in msgs if m["id"] == message_id), None)
+# ---------------------------------------------------------------------------
+# Replay / backtest
+# ---------------------------------------------------------------------------
+
+
+def replay_one(message_id: str, chat_cfg: ChatConfig, adapter: ServiceAdapter) -> int:
+    """Replay one historical message through the gate. Always dry."""
+    msgs = adapter.fetch_messages(chat_cfg.chat_id, limit=100)
+    target = next((m for m in msgs if m.msg_id == message_id), None)
     if target is None:
         print(f"Message id {message_id} not found in last 100 messages.", file=sys.stderr)
         return 1
-    state = default_state()  # ignore real rate limits / cooldowns
-    process_message(target, msgs, state, chat_cfg, now=datetime.now(UTC), dry_run=True)
+    state = default_state()
+    process_message(target, msgs, state, chat_cfg, adapter, now=datetime.now(UTC), dry_run=True)
     return 0
 
 
-def run_backtest(hours: int, chat_cfg: ChatConfig) -> int:
-    """Replay all messages in the last N hours through the gate. Print summary."""
-    msgs = list_messages(chat_cfg.chat_id, page_size=200)
+def run_backtest(hours: int, chat_cfg: ChatConfig, adapter: ServiceAdapter) -> int:
+    """Replay all messages in the last N hours through the gate."""
+    msgs = adapter.fetch_messages(chat_cfg.chat_id, limit=200)
     now = datetime.now(UTC)
     cutoff = now - timedelta(hours=hours)
-    in_window = [
-        m
-        for m in msgs
-        if not is_self_message(m.get("content", ""))
-        and m.get("composetime")
-        and _parse_ts(m["composetime"]) >= cutoff
-    ]
-    in_window.sort(key=lambda m: m.get("composetime", ""))
+    in_window = [m for m in msgs if not m.is_self and m.composed_at >= cutoff]
+    in_window.sort(key=lambda m: m.composed_at)
 
     decisions: Counter[str] = Counter()
     examples_reply: list[tuple[str, str]] = []
     examples_skip: list[tuple[str, str]] = []
 
     for m in in_window:
-        body = m.get("content", "")
-        new_text = _strip_html(body).strip()
         thread_msgs = extract_thread_messages(msgs, m)
         chat_24h_msgs = extract_chat_24h(msgs, m, now=now)
-        recall_hits = fetch_recall_hits(new_text)
+        recall_hits = fetch_recall_hits(m.body)
         prompt = build_prompt(
             chat_cfg.prompt_template_path,
-            sender=m.get("imdisplayname", "?"),
-            composed_at=m.get("composetime", ""),
-            new_text=new_text,
+            sender=m.sender,
+            composed_at=m.composed_at.isoformat(),
+            new_text=m.body,
             thread_context=format_messages(thread_msgs),
             chat_context=format_messages(chat_24h_msgs),
             recall_context=recall_hits,
@@ -790,7 +1086,7 @@ def run_backtest(hours: int, chat_cfg: ChatConfig) -> int:
             raw = invoke_claude(prompt)
         except ClaudeCliError as exc:
             decisions["error"] += 1
-            print(f"  ERROR on {m['id']}: {exc}", file=sys.stderr)
+            print(f"  ERROR on {m.msg_id}: {exc}", file=sys.stderr)
             continue
         decision = parse_decision(raw)
         if decision is None:
@@ -798,13 +1094,14 @@ def run_backtest(hours: int, chat_cfg: ChatConfig) -> int:
             continue
         if decision["reply"]:
             decisions["reply"] += 1
-            examples_reply.append((new_text[:80], decision["text"][:140]))
+            examples_reply.append((m.body[:80], decision["text"][:140]))
         else:
             decisions["skip"] += 1
-            examples_skip.append((new_text[:80], decision.get("reason", "")[:100]))
+            examples_skip.append((m.body[:80], decision.get("reason", "")[:100]))
 
     print(
-        f"\nBacktest summary — chat={chat_cfg.label}, {hours}h window, {len(in_window)} messages considered"
+        f"\nBacktest summary — chat={chat_cfg.label}, {hours}h window, "
+        f"{len(in_window)} messages considered"
     )
     for k, v in decisions.most_common():
         print(f"  {k}: {v}")
@@ -817,22 +1114,11 @@ def run_backtest(hours: int, chat_cfg: ChatConfig) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# Auth management
+# ---------------------------------------------------------------------------
+
 AUTH_RENEW_INTERVAL_SECONDS = 3600
-
-
-def _try_auth_renew() -> bool:
-    """Silently renew teams-cli auth. Returns True on success."""
-    try:
-        subprocess.run(
-            ["teams-cli", "auth-renew", "--no-auto-reauth"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        run_teams_cli(["auth-check"])
-        return True
-    except Exception:  # noqa: BLE001
-        return False
 
 
 def _interruptible_sleep(seconds: int) -> None:
@@ -844,7 +1130,7 @@ def _interruptible_sleep(seconds: int) -> None:
 
 
 def _startup_auth(max_attempts: int = 10) -> bool:
-    """Auth with exponential backoff. Returns True on success."""
+    """Auth with exponential backoff (Teams). Returns True on success."""
     backoff = 30
     for attempt in range(1, max_attempts + 1):
         if _shutdown_requested:
@@ -862,27 +1148,52 @@ def _startup_auth(max_attempts: int = 10) -> bool:
     return False
 
 
+def _startup_auth_all(chat_configs: list[ChatConfig]) -> bool:
+    """Check auth for all unique adapters. Returns False only if a required adapter fails."""
+    checked: set[str] = set()
+    for cfg in chat_configs:
+        if cfg.service in checked:
+            continue
+        checked.add(cfg.service)
+        adapter = get_adapter(cfg.service, cfg.service_config)
+        if adapter.supports_auth_renewal:
+            if not _startup_auth():
+                return False
+        else:
+            try:
+                adapter.check_auth()
+            except AdapterAuthError as exc:
+                log_event("adapter_check_failed", service=cfg.service, error=str(exc))
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+
+
 def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: int) -> int:
-    """Forever: poll each chat, process, sleep. Auto-renews auth every hour."""
+    """Forever: poll each chat, process, sleep."""
     log_event(
         "start",
         dry_run=dry_run,
         poll_seconds=poll_seconds,
         chats=[c.label for c in chat_configs],
+        services=list({c.service for c in chat_configs}),
     )
     signal.signal(signal.SIGINT, _request_shutdown)
     signal.signal(signal.SIGTERM, _request_shutdown)
 
-    if not _startup_auth():
+    if not _startup_auth_all(chat_configs):
         log_event("auth_exhausted")
         print("FATAL: auth failed after retries. Run `teams-cli login`.", file=sys.stderr)
         return 2
 
-    # Log warm/cold start status per chat
     for chat_cfg in chat_configs:
         st = load_state(chat_cfg.state_file)
-        if st["last_seen_message_id"] is not None:
-            log_event("warm_start", chat=chat_cfg.label, last_seen=st["last_seen_message_id"])
+        cursor = _state_cursor(st)
+        if cursor is not None:
+            log_event("warm_start", chat=chat_cfg.label, last_seen=cursor)
         else:
             log_event("will_cold_start", chat=chat_cfg.label)
 
@@ -909,8 +1220,9 @@ def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: in
         for chat_cfg in chat_configs:
             if _shutdown_requested:
                 break
+            adapter = get_adapter(chat_cfg.service, chat_cfg.service_config)
             try:
-                run_once_for_chat(chat_cfg, now=datetime.now(UTC), dry_run=dry_run)
+                run_once_for_chat(chat_cfg, adapter, now=datetime.now(UTC), dry_run=dry_run)
             except TeamsCliAuthRequired:
                 log_event("auth_renewing", chat=chat_cfg.label, reason="mid_loop_401")
                 if _try_auth_renew():
@@ -919,6 +1231,14 @@ def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: in
                 log_event("auth_renew_failed_midloop", chat=chat_cfg.label)
                 cycle_failed = True
                 break
+            except AdapterError as exc:
+                log_event(
+                    "adapter_error",
+                    chat=chat_cfg.label,
+                    service=chat_cfg.service,
+                    error=str(exc),
+                )
+                cycle_failed = True
             except Exception as exc:  # noqa: BLE001
                 import traceback
 
@@ -940,6 +1260,11 @@ def main_loop(chat_configs: list[ChatConfig], *, dry_run: bool, poll_seconds: in
     return 0
 
 
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
 def _resolve_chat(chat_configs: list[ChatConfig], label: str | None) -> ChatConfig:
     """Pick chat by label, or if only one configured, return it."""
     if label:
@@ -954,16 +1279,14 @@ def _resolve_chat(chat_configs: list[ChatConfig], label: str | None) -> ChatConf
 
 
 def main() -> int:
-    # One-shot migration before any path is used (legacy teams-monitor -> chat-watch).
-    # Safe no-op if migration already happened or never needed.
     migrate_legacy_state_dir()
 
-    parser = argparse.ArgumentParser(description="Teams chat monitor (multi-chat)")
+    parser = argparse.ArgumentParser(description="Multi-service chat monitor")
     parser.add_argument(
         "--config",
         type=Path,
         default=DEFAULT_CONFIG_PATH,
-        help="Path to chats.json (default: chats.json next to this script)",
+        help="Path to chats.json",
     )
     parser.add_argument("--dry-run", action="store_true", help="Don't post; just log decisions")
     parser.add_argument("--replay", metavar="MSG_ID", help="Replay one message by id and exit")
@@ -984,9 +1307,13 @@ def main() -> int:
     chat_configs = load_chat_configs(args.config)
 
     if args.replay:
-        return replay_one(args.replay, _resolve_chat(chat_configs, args.chat))
+        cfg = _resolve_chat(chat_configs, args.chat)
+        adapter = get_adapter(cfg.service, cfg.service_config)
+        return replay_one(args.replay, cfg, adapter)
     if args.backtest:
-        return run_backtest(args.hours, _resolve_chat(chat_configs, args.chat))
+        cfg = _resolve_chat(chat_configs, args.chat)
+        adapter = get_adapter(cfg.service, cfg.service_config)
+        return run_backtest(args.hours, cfg, adapter)
 
     return main_loop(chat_configs, dry_run=args.dry_run, poll_seconds=args.poll_seconds)
 
