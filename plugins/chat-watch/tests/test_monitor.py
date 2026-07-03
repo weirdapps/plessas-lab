@@ -15,11 +15,36 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import monitor  # noqa: E402
 
 
+def make_raw_teams_message(
+    msg_id: str = "1",
+    sender: str = "Test User",
+    text: str = "hello",
+    thread_id: str | None = "thread-a",
+    composed_at: str = "2026-05-05T13:30:00.000Z",
+) -> dict:
+    """Build a teams-cli list-messages-shaped message dict (raw, pre-normalization)."""
+    msg: dict = {
+        "id": msg_id,
+        "imdisplayname": sender,
+        "content": text,
+        "messagetype": "RichText/Html",
+        "composetime": composed_at,
+    }
+    if thread_id is not None:
+        msg["_thread_id"] = thread_id
+    return msg
+
+
+# ---------------------------------------------------------------------------
+# State management
+# ---------------------------------------------------------------------------
+
+
 def test_first_run_cold_start_no_state_file(state_file):
-    """Empty state dir → load_state returns default state with last_seen=None."""
+    """Empty state dir → load_state returns default state with cursor=None."""
     assert not state_file.exists()
     state = monitor.load_state(state_file)
-    assert state["last_seen_message_id"] is None
+    assert state[monitor._CURSOR_KEY] is None
     assert state["replies"] == []
     assert state["first_run_at"] is None
 
@@ -31,19 +56,37 @@ def test_state_file_corrupt_falls_back_to_default(state_file):
     assert state == monitor.default_state()
 
 
+def test_state_migration_last_seen_message_id(state_file):
+    """Legacy state with last_seen_message_id is transparently migrated to last_seen_cursor."""
+    state_file.write_text(
+        json.dumps(
+            {
+                "first_run_at": None,
+                "last_seen_message_id": "42",
+                "replies": [],
+                "attempts": {},
+            }
+        )
+    )
+    state = monitor.load_state(state_file)
+    assert state[monitor._CURSOR_KEY] == "42"
+    assert "last_seen_message_id" not in state
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+
+
 def test_rate_limiter_hourly_window(now):
     """5 replies in last 60min → 6th blocked. One drops off → next allowed."""
     state = monitor.default_state()
-    # 5 replies in the last 30 minutes — all within the rolling hour
     for i in range(5):
         ts = (now - timedelta(minutes=30 - i)).isoformat()
         state["replies"].append({"ts": ts, "thread_id": f"t{i}", "text": "..."})
 
-    # 6th attempt: blocked
     assert monitor.rate_limit_ok(state, "t-new", now=now) is False
 
-    # Now move 'now' forward 35 minutes — the first reply (35min back when set,
-    # plus the 35min jump = 65min ago) drops off
     later = now + timedelta(minutes=35)
     assert monitor.rate_limit_ok(state, "t-new", now=later) is True
 
@@ -59,15 +102,16 @@ def test_rate_limiter_per_thread_cooldown(now):
         }
     )
 
-    # Same thread within 10min cooldown: blocked
     assert monitor.rate_limit_ok(state, "thread-A", now=now) is False
-
-    # Different thread: allowed
     assert monitor.rate_limit_ok(state, "thread-B", now=now) is True
 
-    # Same thread 11min later: allowed
-    later = now + timedelta(minutes=6)  # makes original reply 11min old
+    later = now + timedelta(minutes=6)
     assert monitor.rate_limit_ok(state, "thread-A", now=later) is True
+
+
+# ---------------------------------------------------------------------------
+# Self-loop guard
+# ---------------------------------------------------------------------------
 
 
 def test_self_loop_guard():
@@ -77,13 +121,16 @@ def test_self_loop_guard():
     assert monitor.is_self_message("[CLAUDE] yo") is True
     assert monitor.is_self_message("  [Claude] padded") is True
     assert monitor.is_self_message("\t[Claude] tabbed") is True
-    # HTML-wrapped content (teams-cli returns HTML bodies)
     assert monitor.is_self_message("<p>[Claude] from html</p>") is True
     assert monitor.is_self_message("<div><p>[Claude] nested</p></div>") is True
-    # Negatives
     assert monitor.is_self_message("hello there") is False
-    assert monitor.is_self_message("look at [Claude]'s reply") is False  # tag not at start
+    assert monitor.is_self_message("look at [Claude]'s reply") is False
     assert monitor.is_self_message("") is False
+
+
+# ---------------------------------------------------------------------------
+# Decision parser
+# ---------------------------------------------------------------------------
 
 
 def test_json_parser_tolerates_prose():
@@ -111,7 +158,12 @@ def test_json_parser_returns_none_on_missing_keys():
     assert monitor.parse_decision('{"foo": "bar"}') is None
 
 
-def _write_synthetic_config(tmp_path: Path) -> tuple[Path, Path]:
+# ---------------------------------------------------------------------------
+# Config loading
+# ---------------------------------------------------------------------------
+
+
+def _write_synthetic_config(tmp_path: Path, *, service: str = "teams") -> tuple[Path, Path]:
     """Build a minimal valid chats.json + prompt template under tmp_path."""
     prompts_dir = tmp_path / "prompts"
     prompts_dir.mkdir()
@@ -122,13 +174,36 @@ def _write_synthetic_config(tmp_path: Path) -> tuple[Path, Path]:
         "Thread: {thread_context}\nChat: {chat_context}\nRecall: {recall_context}\n"
         '{{"reply": false, "reason": "..."}} OR {{"reply": true, "text": "...", "reason": "..."}}\n'
     )
+    entry: dict = {
+        "label": "synthetic",
+        "id": "19:abc@thread.v2" if service == "teams" else "120363@g.us",
+        "prompt_template": "prompts/synthetic.txt",
+        "max_replies_per_hour": 5,
+        "per_thread_cooldown_minutes": 10,
+    }
+    if service != "teams":
+        entry["service"] = service
     cfg = tmp_path / "chats.json"
-    cfg.write_text(
-        '{"chats": [{"label": "synthetic", "id": "19:abc@thread.v2",'
-        ' "prompt_template": "prompts/synthetic.txt",'
-        ' "max_replies_per_hour": 5, "per_thread_cooldown_minutes": 10}]}'
-    )
+    cfg.write_text(json.dumps({"chats": [entry]}))
     return cfg, template
+
+
+def _make_chat_config(
+    template: Path,
+    *,
+    label: str = "t",
+    chat_id: str = "c",
+    service: str = "teams",
+) -> monitor.ChatConfig:
+    return monitor.ChatConfig(
+        label=label,
+        chat_id=chat_id,
+        prompt_template_path=template,
+        max_replies_per_hour=5,
+        per_thread_cooldown_minutes=10,
+        dry_run=False,
+        service=service,
+    )
 
 
 def test_build_prompt_substitutes_slots(tmp_path: Path):
@@ -143,14 +218,11 @@ def test_build_prompt_substitutes_slots(tmp_path: Path):
         chat_context="(none)",
         recall_context="(none)",
     )
-    # Slot substitutions present
     assert "Sender: Alice" in prompt
     assert "Time:   2026-05-05T10:00:00Z" in prompt
     assert "Text:   Has this happened before?" in prompt
-    # Personality block placeholder survived
     assert "PERSONALITY" in prompt
     assert "Dry wit" in prompt
-    # JSON example survived format() (literal braces preserved as {{ and }})
     assert '{"reply": false' in prompt
     assert '{"reply": true' in prompt
 
@@ -211,6 +283,27 @@ def test_load_chat_configs_missing_file_helpful_error(tmp_path: Path):
         monitor.load_chat_configs(missing)
 
 
+def test_load_chat_configs_rejects_unknown_service(tmp_path: Path):
+    """An unknown service name fails validation."""
+    prompts_dir = tmp_path / "prompts"
+    prompts_dir.mkdir()
+    (prompts_dir / "x.txt").write_text("ok\n")
+    cfg = tmp_path / "chats.json"
+    cfg.write_text(
+        '{"chats": [{"label": "x", "id": "123", "service": "slack",'
+        ' "prompt_template": "prompts/x.txt"}]}'
+    )
+    with pytest.raises(ValueError, match="unknown service"):
+        monitor.load_chat_configs(cfg)
+
+
+def test_load_chat_configs_service_defaults_to_teams(tmp_path: Path):
+    """Missing 'service' field defaults to 'teams'."""
+    cfg, _ = _write_synthetic_config(tmp_path)
+    configs = monitor.load_chat_configs(cfg)
+    assert configs[0].service == "teams"
+
+
 def test_default_config_path_is_under_state_dir():
     """The default config path lives next to state files, not inside the repo."""
     assert monitor.DEFAULT_CONFIG_PATH == monitor.STATE_DIR / "chats.json"
@@ -225,9 +318,15 @@ def test_chat_config_state_file_is_label_scoped():
         max_replies_per_hour=2,
         per_thread_cooldown_minutes=30,
         dry_run=False,
+        service="teams",
     )
     assert cfg.state_file.name == "state-manoli.json"
     assert cfg.state_file.parent == monitor.STATE_DIR
+
+
+# ---------------------------------------------------------------------------
+# Context builders (NormalizedMessage)
+# ---------------------------------------------------------------------------
 
 
 def test_extract_thread_messages_filters_by_thread_id(msg_factory, now):
@@ -238,8 +337,8 @@ def test_extract_thread_messages_filters_by_thread_id(msg_factory, now):
     ]
     new_msg = msg_factory(msg_id="4", thread_id="t-A", text="latest")
     out = monitor.extract_thread_messages(msgs, new_msg)
-    assert len(out) == 2  # excludes new_msg itself
-    assert [m["id"] for m in out] == ["1", "3"]
+    assert len(out) == 2
+    assert [m.msg_id for m in out] == ["1", "3"]
 
 
 def test_extract_chat_24h_includes_only_last_day(msg_factory, now):
@@ -247,16 +346,20 @@ def test_extract_chat_24h_includes_only_last_day(msg_factory, now):
     recent = msg_factory(msg_id="2", composed_at="2026-05-05T13:00:00.000Z")
     new_msg = msg_factory(msg_id="3", composed_at="2026-05-05T13:30:00.000Z")
     out = monitor.extract_chat_24h([old, recent], new_msg, now=now)
-    assert [m["id"] for m in out] == ["2"]  # 'old' is >24h before new_msg
+    assert [m.msg_id for m in out] == ["2"]
 
 
-def test_format_messages_html_stripped_and_truncated(msg_factory):
+def test_format_messages_cleaned(msg_factory):
     msgs = [
-        msg_factory(msg_id="1", sender="Maria", text="<p>Hello <b>world</b></p>"),
+        msg_factory(msg_id="1", sender="Maria", text="Hello world"),
     ]
     out = monitor.format_messages(msgs)
     assert "Maria: Hello world" in out
-    assert "<p>" not in out and "<b>" not in out
+
+
+# ---------------------------------------------------------------------------
+# Teams CLI
+# ---------------------------------------------------------------------------
 
 
 def test_run_teams_cli_returns_parsed_json():
@@ -270,7 +373,6 @@ def test_run_teams_cli_returns_parsed_json():
     with patch("subprocess.run", return_value=fake) as mock_run:
         result = monitor.run_teams_cli(["list-messages", "--chat", "X"])
         assert result == {"messages": []}
-        # Verify --no-auto-reauth is appended
         called_args = mock_run.call_args[0][0]
         assert "--no-auto-reauth" in called_args
 
@@ -286,6 +388,11 @@ def test_run_teams_cli_raises_on_auth_error():
     with patch("subprocess.run", return_value=fake):
         with pytest.raises(monitor.TeamsCliAuthRequired):
             monitor.run_teams_cli(["list-messages", "--chat", "X"])
+
+
+# ---------------------------------------------------------------------------
+# LLM gate
+# ---------------------------------------------------------------------------
 
 
 def _claude_envelope(result, stop_reason="end_turn", is_error=False):
@@ -323,8 +430,7 @@ def test_invoke_claude_default_timeout_is_at_least_240_seconds():
 
 
 def test_invoke_claude_downgrades_on_policy_refusal(tmp_path, monkeypatch):
-    """A spurious 'anthropic policy' refusal auto-retries on the Opus 4.6 /
-    europe-west1 fallback tier (model AND region together)."""
+    """A spurious 'anthropic policy' refusal auto-retries on the fallback tier."""
     monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
     refusal = _claude_envelope("I can't help with that.", stop_reason="refusal")
     ok = _claude_envelope("REPLY_OK")
@@ -349,7 +455,9 @@ def test_invoke_claude_downgrades_on_api_error(tmp_path, monkeypatch):
     assert "claude-opus-4-6[1m]" in mock_run.call_args_list[1][0][0]
 
 
-# --- Resilient-error-handling regression tests (the "Σιωπή..." incident, 2026-05-09) ---
+# ---------------------------------------------------------------------------
+# Error-handling regression tests (the "Σιωπή..." incident, 2026-05-09)
+# ---------------------------------------------------------------------------
 
 
 def _patch_recall(monkeypatch):
@@ -367,20 +475,14 @@ def test_process_message_returns_false_on_llm_timeout(tmp_path, msg_factory, now
     _patch_recall(monkeypatch)
     _isolate_log(monkeypatch, tmp_path)
     _, template = _write_synthetic_config(tmp_path)
-    cfg = monitor.ChatConfig(
-        label="t",
-        chat_id="c",
-        prompt_template_path=template,
-        max_replies_per_hour=5,
-        per_thread_cooldown_minutes=10,
-        dry_run=False,
-    )
+    cfg = _make_chat_config(template)
     state = monitor.default_state()
-    state["last_seen_message_id"] = "0"
+    state[monitor._CURSOR_KEY] = "0"
     msg = msg_factory(msg_id="42", text="hello")
+    adapter = monitor.TeamsAdapter()
 
     with patch.object(monitor, "invoke_claude", side_effect=monitor.ClaudeCliError("timed out")):
-        advance = monitor.process_message(msg, [msg], state, cfg, now=now, dry_run=False)
+        advance = monitor.process_message(msg, [msg], state, cfg, adapter, now=now, dry_run=False)
 
     assert advance is False
     assert state["attempts"]["42"] == 1
@@ -391,26 +493,22 @@ def test_process_message_gives_up_after_max_attempts(tmp_path, msg_factory, now,
     _patch_recall(monkeypatch)
     _isolate_log(monkeypatch, tmp_path)
     _, template = _write_synthetic_config(tmp_path)
-    cfg = monitor.ChatConfig(
-        label="t",
-        chat_id="c",
-        prompt_template_path=template,
-        max_replies_per_hour=5,
-        per_thread_cooldown_minutes=10,
-        dry_run=False,
-    )
+    cfg = _make_chat_config(template)
     state = monitor.default_state()
-    state["last_seen_message_id"] = "0"
-    state["attempts"] = {"42": monitor.MAX_LLM_ATTEMPTS - 1}  # one more failure → give up
+    state[monitor._CURSOR_KEY] = "0"
+    state["attempts"] = {"42": monitor.MAX_LLM_ATTEMPTS - 1}
     msg = msg_factory(msg_id="42", text="hello")
+    adapter = monitor.TeamsAdapter()
 
     with patch.object(monitor, "invoke_claude", side_effect=monitor.ClaudeCliError("timed out")):
         with patch.object(monitor, "notify_user") as notify:
-            advance = monitor.process_message(msg, [msg], state, cfg, now=now, dry_run=False)
+            advance = monitor.process_message(
+                msg, [msg], state, cfg, adapter, now=now, dry_run=False
+            )
 
-    assert advance is True  # cursor advances on give-up
-    assert "42" not in state.get("attempts", {})  # cleanup
-    notify.assert_called_once()  # user gets a heads-up
+    assert advance is True
+    assert "42" not in state.get("attempts", {})
+    notify.assert_called_once()
 
 
 def test_process_message_clears_attempts_on_success(tmp_path, msg_factory, now, monkeypatch):
@@ -418,96 +516,81 @@ def test_process_message_clears_attempts_on_success(tmp_path, msg_factory, now, 
     _patch_recall(monkeypatch)
     _isolate_log(monkeypatch, tmp_path)
     _, template = _write_synthetic_config(tmp_path)
-    cfg = monitor.ChatConfig(
-        label="t",
-        chat_id="c",
-        prompt_template_path=template,
-        max_replies_per_hour=5,
-        per_thread_cooldown_minutes=10,
-        dry_run=False,
-    )
+    cfg = _make_chat_config(template)
     state = monitor.default_state()
-    state["last_seen_message_id"] = "0"
+    state[monitor._CURSOR_KEY] = "0"
     state["attempts"] = {"42": 1}
     msg = msg_factory(msg_id="42", text="hello")
+    adapter = monitor.TeamsAdapter()
 
     with patch.object(monitor, "invoke_claude", return_value='{"reply": false, "reason": "noop"}'):
-        advance = monitor.process_message(msg, [msg], state, cfg, now=now, dry_run=True)
+        advance = monitor.process_message(msg, [msg], state, cfg, adapter, now=now, dry_run=True)
 
     assert advance is True
     assert "42" not in state.get("attempts", {})
 
 
-def test_run_once_does_not_advance_cursor_on_transient_error(
-    tmp_path, msg_factory, now, monkeypatch
-):
-    """The original bug: LLM timeout must NOT advance last_seen_message_id."""
+def test_run_once_does_not_advance_cursor_on_transient_error(tmp_path, now, monkeypatch):
+    """The original bug: LLM timeout must NOT advance cursor."""
     _patch_recall(monkeypatch)
     _isolate_log(monkeypatch, tmp_path)
     _, template = _write_synthetic_config(tmp_path)
     state_path = tmp_path / "state-t.json"
-    cfg = monitor.ChatConfig(
-        label="t",
-        chat_id="c",
-        prompt_template_path=template,
-        max_replies_per_hour=5,
-        per_thread_cooldown_minutes=10,
-        dry_run=False,
-    )
-    # Pre-seed cursor so we're past cold-start
-    monitor.save_state(state_path, {**monitor.default_state(), "last_seen_message_id": "10"})
-    new_msg = msg_factory(msg_id="42", text="hello")
+    cfg = _make_chat_config(template)
+
+    monitor.save_state(state_path, {**monitor.default_state(), monitor._CURSOR_KEY: "10"})
+    raw_msg = make_raw_teams_message(msg_id="42", text="hello")
 
     with (
-        patch.object(monitor, "list_messages", return_value=[new_msg]),
+        patch.object(monitor, "list_messages", return_value=[raw_msg]),
         patch.object(monitor, "invoke_claude", side_effect=monitor.ClaudeCliError("timed out")),
         patch.object(
             monitor.ChatConfig, "state_file", new_callable=lambda: property(lambda self: state_path)
         ),
     ):
-        monitor.run_once_for_chat(cfg, now=now, dry_run=False)
+        adapter = monitor.TeamsAdapter()
+        monitor.run_once_for_chat(cfg, adapter, now=now, dry_run=False)
 
     final_state = monitor.load_state(state_path)
-    assert final_state["last_seen_message_id"] == "10"  # cursor did NOT advance
+    assert final_state[monitor._CURSOR_KEY] == "10"
     assert final_state["attempts"]["42"] == 1
 
 
-# --- Reliability improvements (VPS crash-loop fix, 2026-06-14) ---
+# ---------------------------------------------------------------------------
+# Reliability (VPS crash-loop fix, 2026-06-14)
+# ---------------------------------------------------------------------------
 
 
 def test_save_state_atomic(tmp_path):
     """save_state writes atomically via tmp+rename — partial writes don't corrupt."""
     state_path = tmp_path / "state.json"
     original: dict = {
-        "last_seen_message_id": "100",
+        monitor._CURSOR_KEY: "100",
         "replies": [],
         "first_run_at": None,
         "attempts": {},
     }
     monitor.save_state(state_path, original)
 
-    # Verify the .tmp file is cleaned up (renamed away)
     assert not state_path.with_suffix(".tmp").exists()
 
-    # Verify content is correct
     loaded = monitor.load_state(state_path)
-    assert loaded["last_seen_message_id"] == "100"
+    assert loaded[monitor._CURSOR_KEY] == "100"
 
 
 def test_save_state_preserves_original_on_rename_failure(tmp_path):
     """If rename fails, the original state file survives."""
     state_path = tmp_path / "state.json"
     original: dict = {
-        "last_seen_message_id": "50",
+        monitor._CURSOR_KEY: "50",
         "replies": [],
         "first_run_at": None,
         "attempts": {},
     }
     monitor.save_state(state_path, original)
 
-    # Simulate: write new state where rename would fail
     new_state: dict = {
-        "last_seen_message_id": "999",
+        monitor._CURSOR_KEY: "999",
         "replies": [],
         "first_run_at": None,
         "attempts": {},
@@ -516,9 +599,8 @@ def test_save_state_preserves_original_on_rename_failure(tmp_path):
         with pytest.raises(OSError):
             monitor.save_state(state_path, new_state)
 
-    # Original survives
     loaded = monitor.load_state(state_path)
-    assert loaded["last_seen_message_id"] == "50"
+    assert loaded[monitor._CURSOR_KEY] == "50"
 
 
 def test_startup_auth_retries_with_backoff(tmp_path, monkeypatch):
@@ -540,7 +622,6 @@ def test_startup_auth_retries_with_backoff(tmp_path, monkeypatch):
         patch.object(monitor, "_try_auth_renew", return_value=False),
         patch.object(monitor, "_interruptible_sleep"),
     ):
-        # Third call succeeds
         result = monitor._startup_auth(max_attempts=5)
 
     assert result is True
@@ -562,7 +643,7 @@ def test_startup_auth_exhaustion(tmp_path, monkeypatch):
     assert result is False
 
 
-def test_midloop_auth_failure_does_not_exit(tmp_path, msg_factory, now, monkeypatch):
+def test_midloop_auth_failure_does_not_exit(tmp_path, now, monkeypatch):
     """Mid-loop auth failure skips remaining chats but does NOT return 2."""
     _patch_recall(monkeypatch)
     _isolate_log(monkeypatch, tmp_path)
@@ -570,42 +651,33 @@ def test_midloop_auth_failure_does_not_exit(tmp_path, msg_factory, now, monkeypa
     monkeypatch.setattr(monitor, "HEARTBEAT_FILE", tmp_path / "heartbeat")
 
     _, template = _write_synthetic_config(tmp_path)
-    cfg = monitor.ChatConfig(
-        label="t",
-        chat_id="c",
-        prompt_template_path=template,
-        max_replies_per_hour=5,
-        per_thread_cooldown_minutes=10,
-        dry_run=False,
-    )
+    cfg = _make_chat_config(template)
 
     poll_count = 0
 
-    def fake_run_once(chat_cfg, *, now, dry_run):
+    def fake_run_once(chat_cfg, adapter, *, now, dry_run):
         nonlocal poll_count
         poll_count += 1
         if poll_count == 1:
             raise monitor.TeamsCliAuthRequired("expired")
-        # After first cycle, request shutdown to exit the loop
         monitor._shutdown_requested = True
 
     with (
-        patch.object(monitor, "_startup_auth", return_value=True),
+        patch.object(monitor, "_startup_auth_all", return_value=True),
         patch.object(monitor, "run_once_for_chat", side_effect=fake_run_once),
         patch.object(monitor, "_try_auth_renew", return_value=False),
         patch.object(monitor, "load_state", return_value=monitor.default_state()),
         patch.object(monitor, "sd_notify"),
+        patch.object(monitor, "get_adapter", return_value=monitor.TeamsAdapter()),
     ):
         exit_code = monitor.main_loop([cfg], dry_run=False, poll_seconds=1)
 
-    # Should exit cleanly via shutdown signal, NOT exit 2
     assert exit_code == 0
     monkeypatch.setattr(monitor, "_shutdown_requested", False)
 
 
 def test_cached_recall_connection(monkeypatch):
     """fetch_recall_hits reuses the cached connection on subsequent calls."""
-    # Reset module-level cache
     monkeypatch.setattr(monitor, "_recall_conn", None)
     monkeypatch.setattr(monitor, "_recall_fn", None)
 
@@ -631,7 +703,6 @@ def test_cached_recall_connection(monkeypatch):
         patch.object(monitor, "_recall_fn", None),
         patch.object(monitor, "_recall_conn", None),
     ):
-        # Manually set up the cached state
         monitor._recall_fn = fake_recall
         monitor._recall_conn = fake_conn
 
@@ -640,43 +711,34 @@ def test_cached_recall_connection(monkeypatch):
 
     assert result1 == "(no hits)"
     assert result2 == "(no hits)"
-    # Connection was pre-cached, so get_connection was never called
     assert conn_calls == 0
 
-    # Cleanup
     monkeypatch.setattr(monitor, "_recall_conn", None)
     monkeypatch.setattr(monitor, "_recall_fn", None)
 
 
-def test_attempts_pruning_removes_stale_entries(tmp_path, msg_factory, now, monkeypatch):
+def test_attempts_pruning_removes_stale_entries(tmp_path, now, monkeypatch):
     """Stale entries in state['attempts'] are pruned when their msg_id leaves the fetch window."""
     _patch_recall(monkeypatch)
     _isolate_log(monkeypatch, tmp_path)
     _, template = _write_synthetic_config(tmp_path)
     state_path = tmp_path / "state-t.json"
-    cfg = monitor.ChatConfig(
-        label="t",
-        chat_id="c",
-        prompt_template_path=template,
-        max_replies_per_hour=5,
-        per_thread_cooldown_minutes=10,
-        dry_run=False,
-    )
-    # Pre-seed with a stale attempt for msg_id "old-99" which won't be in the fetch
+    cfg = _make_chat_config(template)
+
     monitor.save_state(
         state_path,
-        {**monitor.default_state(), "last_seen_message_id": "100", "attempts": {"old-99": 2}},
+        {**monitor.default_state(), monitor._CURSOR_KEY: "100", "attempts": {"old-99": 2}},
     )
-    # Only msg_id "101" is in the fetch window
-    current_msg = msg_factory(msg_id="101", text="[Claude] self")
+    raw_msg = make_raw_teams_message(msg_id="101", text="[Claude] self")
 
     with (
-        patch.object(monitor, "list_messages", return_value=[current_msg]),
+        patch.object(monitor, "list_messages", return_value=[raw_msg]),
         patch.object(
             monitor.ChatConfig, "state_file", new_callable=lambda: property(lambda self: state_path)
         ),
     ):
-        monitor.run_once_for_chat(cfg, now=now, dry_run=False)
+        adapter = monitor.TeamsAdapter()
+        monitor.run_once_for_chat(cfg, adapter, now=now, dry_run=False)
 
     final = monitor.load_state(state_path)
     assert "old-99" not in final.get("attempts", {})
@@ -690,27 +752,21 @@ def test_heartbeat_file_written(tmp_path, monkeypatch):
     monkeypatch.setattr(monitor, "_shutdown_requested", False)
 
     _, template = _write_synthetic_config(tmp_path)
-    cfg = monitor.ChatConfig(
-        label="t",
-        chat_id="c",
-        prompt_template_path=template,
-        max_replies_per_hour=5,
-        per_thread_cooldown_minutes=10,
-        dry_run=False,
-    )
+    cfg = _make_chat_config(template)
 
     call_count = 0
 
-    def fake_run_once(chat_cfg, *, now, dry_run):
+    def fake_run_once(chat_cfg, adapter, *, now, dry_run):
         nonlocal call_count
         call_count += 1
         monitor._shutdown_requested = True
 
     with (
-        patch.object(monitor, "_startup_auth", return_value=True),
+        patch.object(monitor, "_startup_auth_all", return_value=True),
         patch.object(monitor, "run_once_for_chat", side_effect=fake_run_once),
         patch.object(monitor, "load_state", return_value=monitor.default_state()),
         patch.object(monitor, "sd_notify"),
+        patch.object(monitor, "get_adapter", return_value=monitor.TeamsAdapter()),
     ):
         monitor.main_loop([cfg], dry_run=False, poll_seconds=1)
 
