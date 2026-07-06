@@ -1,6 +1,6 @@
 # plessas-lab
 
-Experimental Claude Code plugins by Dimitrios Plessas. Everything in here needs a credential, a platform binding, or a private data store to be fully useful, which is why it lives in the "lab" rather than the stable [`plessas-marketplace`](https://github.com/weirdapps/plessas-marketplace).
+Experimental Claude Code plugins by [weirdapps](https://weirdapps.github.io/resume/). Everything in here needs a credential, a platform binding, or a private data store to be fully useful, which is why it lives in the "lab" rather than the stable [`plessas-marketplace`](https://github.com/weirdapps/plessas-marketplace).
 
 [![Validate Plugins](https://github.com/weirdapps/plessas-lab/actions/workflows/validate-plugins.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/validate-plugins.yml)
 [![CodeQL](https://github.com/weirdapps/plessas-lab/actions/workflows/codeql.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/codeql.yml)
@@ -165,7 +165,7 @@ Seven workflows under `.github/workflows/`:
 | `validate-plugins.yml` | push / PR on master | `marketplace.json` and every `plugin.json` are valid JSON with the required fields; per-plugin README present; every command has YAML frontmatter; also runs `scripts/validate_consistency.py`. |
 | `codeql.yml` | push / PR / weekly cron | GitHub CodeQL for JavaScript and TypeScript. |
 | `pii-check.yml` | push / PR | Runs `installers/pii-gauntlet.sh --mode=ci` to scan git-tracked files for personal data. |
-| `rename-guard.yml` | push / PR | Fails if the legacy names `integrations-marketplace` or `teams-monitor` leak back into tracked files. |
+| `rename-guard.yml` | push / PR | Fails if a legacy pre-rename project name (from the 2026-05-09 renames) leaks back into tracked files. |
 | `sonarcloud.yml` | push / PR / manual | Runs tests with coverage and, when `SONAR_TOKEN` is set, uploads to SonarCloud. |
 | `deps-refresh.yml` | monthly cron (22nd, 07:11 UTC) | Delegates to `weirdapps/shared-workflows` monthly refresh; gate is `npm test`. |
 | `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges minor and patch bumps. |
