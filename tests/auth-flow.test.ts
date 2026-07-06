@@ -49,7 +49,12 @@ vi.mock('@google-cloud/local-auth', () => ({
   authenticate: vi.fn(),
 }));
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: vi.fn(() => ({})),
+  // Regular function (not an arrow) so `new GoogleGenAI()` is constructable.
+  // Arrow functions are not constructors; newer vitest enforces this via
+  // Reflect.construct, which broke this mock once `npm update` bumped vitest.
+  GoogleGenAI: vi.fn(function GoogleGenAI() {
+    return {};
+  }),
 }));
 
 describe('Auth Flow & Token Security', () => {
