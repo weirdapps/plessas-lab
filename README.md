@@ -1,120 +1,148 @@
 # plessas-lab
 
+Experimental Claude Code plugins by Dimitrios Plessas, Lab edition.
+
 [![Validate Plugins](https://github.com/weirdapps/plessas-lab/actions/workflows/validate-plugins.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/validate-plugins.yml)
+[![CodeQL](https://github.com/weirdapps/plessas-lab/actions/workflows/codeql.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/codeql.yml)
+[![PII Check](https://github.com/weirdapps/plessas-lab/actions/workflows/pii-check.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/pii-check.yml)
+[![Rename Guard](https://github.com/weirdapps/plessas-lab/actions/workflows/rename-guard.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/rename-guard.yml)
 [![SonarCloud](https://github.com/weirdapps/plessas-lab/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/sonarcloud.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A lab marketplace of experimental Claude Code plugins. Covers Apple Notes, Gmail, image generation with Google's Gemini API, YouTube content management, Microsoft Teams monitoring, and an email communication analytics add-on.
+## What this is
 
-> **Companion to [plessas-marketplace](https://github.com/weirdapps/plessas-marketplace)** — production-grade workplace plugins for email, presentations, meetings, and Teams chat. Plugins here are labelled "lab" because they require external API setup (Google OAuth, Gemini key, etc.) or are experimental in scope.
+A public Claude Code marketplace of seven experimental plugins that reach outside the local machine (Google APIs, macOS-only tooling, Microsoft Teams, an image generation model, and a fleet-wide ops engine). Every plugin needs credentials, a platform binding, or a private data store to be fully useful, which is why they live here rather than in the stable [`plessas-marketplace`](https://github.com/weirdapps/plessas-marketplace).
+
+Relationship to the sibling repo:
+
+- **`plessas-marketplace`** (public, stable): everyday workplace plugins (mail, chat, decks, meetings, excel, docs). Works out of the box with Microsoft 365.
+- **`plessas-lab`** (public, this repo): plugins that need extra plumbing (Google OAuth, Gemini API key, macOS, private knowledge store, or SSH to a VPS), or are early stage (`chat-watch` is v0.1).
 
 ## Plugins
 
-| Plugin | Version | Platform | Description |
-|--------|---------|----------|-------------|
-| [manage-apple-notes](./plugins/manage-apple-notes/) | v1.0 | macOS only | CRUD operations for Apple Notes — persistent storage of thoughts, data, and information across Claude Code sessions |
-| [manage-gmail](./plugins/manage-gmail/) | v1.0 | All platforms | Access and process Gmail messages via the Gmail API — read, search, list, send, reply, and forward with OAuth 2.0 |
-| [manage-nano-banana](./plugins/manage-nano-banana/) | v1.0 | All platforms | Generate and edit images, diagrams, infographics, and visualizations using Google's Gemini image generation API |
-| [manage-youtube](./plugins/manage-youtube/) | v1.0 | All platforms | Search, discover, and manage YouTube content — channels, videos, transcripts, and playlists via TypeScript CLI tools |
-| [chat-watch](./plugins/chat-watch/) | v0.1 experimental | All platforms | Polls Microsoft Teams chats and posts `[Claude]`-prefixed replies when an LLM gate decides context is genuinely useful |
-| [mail-pro](./plugins/mail-pro/) | v1.0 | All platforms | Corpus-driven communication analytics add-on — relationship heatmap, style guide generation. Requires the `second-brain` knowledge store |
-
-## Commands
-
-| Command | Plugin | Description |
-|---------|--------|-------------|
-| `/apple-notes` | manage-apple-notes | List, create, read, and delete Apple Notes |
-| `/gmail` | manage-gmail | Read, search, send, reply, forward, and draft Gmail messages |
-| `/nano-banana` | manage-nano-banana | Generate or edit images, create diagrams and infographics |
-| `/create-nbg-infographic` | manage-nano-banana | Create an NBG-themed infographic using the Gemini API |
-| `/youtube` | manage-youtube | Search YouTube, get channel info, retrieve videos and transcripts |
-| `/comm-report` | mail-pro | Strategic communication health report with relationship heatmap |
-| `/style-rebuild` | mail-pro | Full corpus analysis to generate a statistically-grounded email style guide |
-
-`chat-watch` does not register a slash command — it ships a Python CLI (`monitor.py`) intended to run as a long-lived process (manually or via launchd/systemd). See [plugins/chat-watch/README.md](./plugins/chat-watch/README.md) for setup.
-
-`mail-pro` requires the [`second-brain`](https://github.com/weirdapps/second-brain) knowledge store (private repo). If you do not have access to it, use the `mail` plugin in `plessas-marketplace` instead — it covers all cross-platform use cases without this dependency.
+| Plugin | Version | Slash commands | Notes |
+|---|---|---|---|
+| [`manage-apple-notes`](./plugins/manage-apple-notes/) | 1.0.0 | `/apple-notes` | CRUD for Apple Notes via `osascript`. macOS only; scripts exit cleanly on other platforms. |
+| [`manage-gmail`](./plugins/manage-gmail/) | 1.0.0 | `/gmail` | Gmail API (read, search, send, reply, forward, draft). Node CLI wrapper; requires Google Cloud OAuth 2.0 Desktop client. |
+| [`manage-nano-banana`](./plugins/manage-nano-banana/) | 1.0.0 | `/nano-banana`, `/create-nbg-infographic` | Image generation and editing via Google Gemini (Nano Banana). Requires `GEMINI_API_KEY`. |
+| [`manage-youtube`](./plugins/manage-youtube/) | 1.0.0 | `/youtube` | TypeScript CLI over YouTube. Discovery works with no auth; playlist management needs YouTube Data API v3 OAuth. |
+| [`chat-watch`](./plugins/chat-watch/) | 0.1.0 (experimental) | none (Python `monitor.py`) | Polls Microsoft Teams chats and posts `[Claude]`-prefixed replies through an LLM gate. Runs as a long-lived process (launchd / systemd). Requires `teams-cli` authenticated. |
+| [`mail-pro`](./plugins/mail-pro/) | 1.0.0 | `/comm-report`, `/style-rebuild` | Companion to the `mail` plugin. Corpus-driven relationship analytics and style-guide rebuild against the private `second-brain` SQLite store. Maintainer-only. |
+| [`ops-sync`](./plugins/ops-sync/) | 1.0.0 | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Fleet health engine. Six agents scan local repos, Hetzner VPS systemd timers, GitHub Actions, Mac LaunchAgents, and Mac / VPS HEAD alignment. Optional remediation. |
 
 ## Installation
 
-Clone this marketplace into Claude Code's marketplaces directory; Claude Code will discover the plugins on next launch:
+Claude Code discovers marketplaces by cloning them into its marketplaces directory:
 
 ```bash
 mkdir -p ~/.claude/plugins/marketplaces
 git clone https://github.com/weirdapps/plessas-lab.git ~/.claude/plugins/marketplaces/plessas-lab
 ```
 
-Then enable the plugins you want from the Claude Code plugin manager (`/plugin`).
+Then enable the plugins you want from the `/plugin` manager inside Claude Code.
 
-### Update
+Update later with:
 
 ```bash
 cd ~/.claude/plugins/marketplaces/plessas-lab && git pull
 ```
 
-## Directory Structure
+## Usage
+
+Typical entry points once a plugin is enabled:
+
+```text
+/gmail search from:boss@example.com after:2026/06/01
+/nano-banana create a hero image for a fintech landing page
+/create-nbg-infographic quarterly card revenue mix
+/youtube channel @veritasium
+/apple-notes create "Weekly review" "..."
+/comm-report month --recipient theofilidi
+/style-rebuild
+/ops-status --live
+/ops-sync --scope all
+/ops-doctor vps
+```
+
+`chat-watch` has no slash command. It ships a Python CLI (`plugins/chat-watch/monitor.py`) that you run as a long-lived worker, with per-chat config held outside the repo at `~/.claude/chat-watch/`. See [`plugins/chat-watch/README.md`](./plugins/chat-watch/README.md) for the first-run walkthrough.
+
+## Configuration and secrets
+
+Nothing sensitive is committed. Each plugin's README documents its own setup; summary:
+
+| Plugin | Setup / auth |
+|---|---|
+| `manage-apple-notes` | macOS only. No credentials. |
+| `manage-gmail` | Google Cloud project with Gmail API enabled, OAuth 2.0 Desktop client. Store `client_secret_*.json` at `~/.google-skills/gmail/GMailSkill-Credentials.json`; token cached at `~/.google-skills/gmail/gmail_token.json`. |
+| `manage-nano-banana` | `export GEMINI_API_KEY="..."` in your shell rc. |
+| `manage-youtube` | Discovery: no auth. Playlist management: Google Cloud project with YouTube Data API v3 + OAuth 2.0 Desktop client. |
+| `chat-watch` | `teams-cli auth-check` returns ok. Copy `chats.example.json` and `prompts/example_*.txt` into `~/.claude/chat-watch/` and edit. Recommend `dry_run: true` for the first hour. |
+| `mail-pro` | Requires the private `weirdapps/second-brain` repo cloned at `~/SourceCode/second-brain/` with `data/brain.db` populated. Not portable. |
+| `ops-sync` | Expects the full `~/SourceCode/` layout, plus SSH access to the Hetzner VPS for systemd checks. |
+
+Secrets are kept out of the repo by `.gitignore`: `node_modules/`, `.env` / `.env.local`, `*credentials*.json`, `token.json`, `*.pem`, `*.key`, `skill-key/`. Personal `chat-watch` config lives entirely under `~/.claude/chat-watch/`, outside the repo.
+
+## Repository layout
 
 ```text
 plessas-lab/
-├── .claude-plugin/
-│   └── marketplace.json             # Marketplace manifest (lists all plugins)
-├── plugins/
-│   ├── manage-apple-notes/          # Apple Notes integration (v1.0, macOS only)
-│   │   ├── skills/
-│   │   ├── commands/                # /apple-notes
-│   │   └── README.md
-│   │
-│   ├── manage-gmail/                # Gmail API integration (v1.0)
-│   │   ├── skills/
-│   │   ├── commands/                # /gmail
-│   │   └── README.md
-│   │
-│   ├── manage-nano-banana/          # Gemini image generation (v1.0)
-│   │   ├── skills/
-│   │   ├── commands/                # /nano-banana, /create-nbg-infographic
-│   │   └── README.md
-│   │
-│   ├── manage-youtube/              # YouTube content management (v1.0)
-│   │   ├── skills/
-│   │   ├── commands/                # /youtube
-│   │   └── README.md
-│   │
-│   ├── chat-watch/                  # Teams chat monitor with LLM gate (v0.1, experimental)
-│   │   ├── monitor.py               # Long-running CLI (no slash command)
-│   │   ├── chats.example.json       # Sanitized config template
-│   │   ├── prompts/                 # Sanitized gating-prompt templates
-│   │   ├── tests/
-│   │   └── README.md
-│   │
-│   └── mail-pro/                    # Email analytics add-on (v1.0, requires second-brain)
-│       ├── commands/                # /comm-report, /style-rebuild
-│       ├── scripts/                 # style-sync.py daily cron helper
-│       └── README.md
-│
-├── .github/workflows/
-│   ├── validate-plugins.yml         # Plugin manifest and frontmatter validation
-│   ├── sonarcloud.yml               # Static analysis and code quality
-│   ├── codeql.yml                   # Security scanning
-│   ├── pii-check.yml                # PII leak detection on PRs
-│   └── dependabot-auto-merge.yml    # Automatic dependency updates
-│
-├── README.md
-└── SECURITY.md
+  .claude-plugin/marketplace.json     Top-level manifest (all seven plugins)
+  plugins/
+    manage-apple-notes/               macOS Notes.app via osascript
+    manage-gmail/                     Gmail API + Node CLI
+    manage-nano-banana/               Google Gemini image generation
+    manage-youtube/                   YouTube TypeScript CLI
+    chat-watch/                       Teams monitor (monitor.py) + tests
+    mail-pro/                         second-brain-backed mail analytics
+    ops-sync/                         Ops fleet-health with six agents
+  scripts/validate_consistency.py     Marketplace / plugin consistency check
+  tests/auth-flow.test.ts             Top-level TypeScript test suite (vitest)
+  .github/workflows/                  Seven CI workflows (see below)
+  CLAUDE.md                           Project brief for Claude Code
+  SECURITY.md
+  LICENSE                             MIT
 ```
 
-## Data Privacy
+## Development and testing
 
-This marketplace is designed so that **no credentials or personal data are committed to the repository**. All sensitive content stays local.
+```bash
+# Node / TypeScript tests (top-level, vitest)
+npm install
+npm test
+npm run test:coverage
 
-| Content | Why |
-|---------|-----|
-| `node_modules/` | Auto-generated dependencies |
-| `.env` / `.env.local` | Environment variables and API keys |
-| `*credentials*.json` / `token.json` | OAuth tokens and service account keys |
-| `*.pem` / `*.key` | Private keys |
-| `skill-key/` | Skill credential files |
-| `~/.claude/chat-watch/` (outside the repo) | chat-watch per-chat IDs, prompts, and state |
+# Python tests (chat-watch, manage-apple-notes)
+pytest --cov=. --cov-report=xml --cov-report=term-missing
+
+# Lint (Python)
+ruff check .
+mypy .
+```
+
+`pyproject.toml` pins Python 3.11 and a ruff rulepack of E, W, F, I, B, C4, UP. `package.json` requires Node 20+.
+
+Adding a new plugin:
+
+1. Create `plugins/<name>/.claude-plugin/plugin.json` with `name`, `description`, `version` (all validated by CI).
+2. Add command files under `plugins/<name>/commands/*.md` with YAML frontmatter (`---` on line 1). CI rejects any command missing frontmatter.
+3. Add `plugins/<name>/README.md`.
+4. Register the plugin in `.claude-plugin/marketplace.json` under `"plugins"`.
+5. Keep credentials out of the repo; the `.gitignore` patterns above already cover the usual suspects.
+
+## Continuous integration
+
+Seven workflows under `.github/workflows/`:
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `validate-plugins.yml` | push / PR on master | `marketplace.json` and every `plugin.json` are valid JSON with required fields; READMEs exist; every command has YAML frontmatter; runs `scripts/validate_consistency.py`. |
+| `codeql.yml` | push / PR / weekly cron | GitHub CodeQL for JavaScript and TypeScript. |
+| `pii-check.yml` | push / PR | Runs `installers/pii-gauntlet.sh --mode=ci` to scan git-tracked files for personal data. |
+| `rename-guard.yml` | push / PR | Fails if the legacy names `integrations-marketplace` or `teams-monitor` leak back into tracked files. |
+| `sonarcloud.yml` | push / PR / manual | Runs tests with coverage and, when `SONAR_TOKEN` is set, uploads to SonarCloud. |
+| `deps-refresh.yml` | monthly cron (22nd, 07:11 UTC) | Delegates to `weirdapps/shared-workflows` monthly refresh; gate is `npm test`. |
+| `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges minor and patch bumps. |
 
 ## License
 
-MIT — see individual plugins for their specific licenses.
+MIT. See [LICENSE](./LICENSE). Individual plugins carry their own MIT declaration in their `plugin.json`.
