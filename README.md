@@ -30,7 +30,7 @@ Companion to the sibling [`plessas-marketplace`](https://github.com/weirdapps/pl
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
     CC[Claude Code CLI]
     MP[.claude-plugin/marketplace.json]
     CC --> MP
