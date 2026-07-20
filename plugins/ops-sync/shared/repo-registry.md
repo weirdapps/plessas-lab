@@ -8,7 +8,6 @@ All repos live flat under `~/SourceCode/`. VPS mirror at same path via `ssh vps`
 |------|------|-------|------|----|--------|-----|-----|
 | atm-recon | py | — | — | — | master | no | priv |
 | claude-config | sh/py | pytest | shellcheck | gha | master | yes | priv |
-| communications-marketplace | py | pytest | ruff | gha | master | no | pub |
 | etoro-portfolio | py | pytest | ruff | gha | master | no | priv |
 | etoro-tui | py | pytest | ruff | gha | master | no | priv |
 | etoro_census | ts | vitest | eslint | gha | master | yes | pub |
@@ -28,11 +27,16 @@ All repos live flat under `~/SourceCode/`. VPS mirror at same path via `ssh vps`
 | resume | ts | — | eslint | gha | master | no | pub |
 | sch-mail | py | — | — | — | master | no | priv |
 | second-brain | py | pytest | ruff | gha | master | yes | priv |
+| shared-workflows | yaml | — | — | gha | main | no | pub |
+| sw-utils | html | — | — | — | master | no | priv |
 | teams-access | ts | vitest | eslint | gha | master | no | priv |
 | telegram-bot | ts | vitest | eslint | gha | master | no | pub |
 | whatsapp-mcp | py/go | — | — | — | main | no | priv |
+| yahoo-access | py | pytest | ruff | gha | master | no | priv |
 
 Legend: gha = GitHub Actions, py = Python, ts = TypeScript, sh = Shell
+
+> `communications-marketplace` was archived + deprecated on 2026-05-25 (superseded by `plessas-marketplace`) and removed from this registry on 2026-07-20.
 
 ## VPS Systemd Units
 
@@ -43,7 +47,7 @@ Legend: gha = GitHub Actions, py = Python, ts = TypeScript, sh = Shell
 | chat-watch.service | active/running |
 | telegram-bridge.service | enabled (may be inactive) |
 
-### Timers (24)
+### Timers (~35 on VPS — core listed; extras noted below)
 
 | Unit | Schedule (Athens) | Critical |
 |------|-------------------|----------|
@@ -62,7 +66,7 @@ Legend: gha = GitHub Actions, py = Python, ts = TypeScript, sh = Shell
 | sb-daily-sync | 07:00 daily | yes |
 | sb-reverse-ingest | 06:07 daily | no |
 | sb-health-check | 23:50 daily | no |
-| committee | 12:00 daily | yes |
+| v3-report | 12:00 daily (renamed from committee) | yes |
 | backtest | Sun 20:00 | no |
 | gcloud-refresh | every 2h | yes |
 | census-post | Sat 16:00 | no |
@@ -71,6 +75,8 @@ Legend: gha = GitHub Actions, py = Python, ts = TypeScript, sh = Shell
 | pi-pulse | Sun 22:00 | no |
 | week-ahead | Sun 18:00 | no |
 | daily-health | 23:55 daily | yes |
+
+> Additional VPS timers active as of 2026-07-20 (not individually tabulated): vps-heartbeat, v3-ic-logger, news-market, brain-backup, signals-refresh, repo-autoupdate (05:43 FF-pull all repos), daily-summary, sb-conversation-sync, dependabot-sweep, logrotate-user, launchpadlib-cache-clean.
 
 ## Mac LaunchAgents (6)
 
