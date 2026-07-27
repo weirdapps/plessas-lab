@@ -1,10 +1,10 @@
 # mail-pro v1.0
 
-> **Maintainer-only.** This plugin requires the maintainer's private `second-brain` SQLite database at `~/SourceCode/second-brain/data/brain.db` and hardcodes `SENDER_FILTER = "%plessas%"` in `scripts/style-sync.py`. It's installed from the `plessas-lab` marketplace because it's not portable as-is. If you're not the maintainer, the `mail` plugin in `plessas-marketplace` covers the cross-platform use cases.
+> **Maintainer-only.** This plugin requires the maintainer's private `second-brain` SQLite database at `~/SourceCode/plessas-second-brain/data/brain.db` and hardcodes `SENDER_FILTER = "%plessas%"` in `scripts/style-sync.py`. It's installed from the `plessas-lab` marketplace because it's not portable as-is. If you're not the maintainer, the `mail` plugin in `plessas-marketplace` covers the cross-platform use cases.
 
-Optional companion to the [`mail`](../mail/) plugin. Adds two corpus-driven commands plus the daily style-sync helper. **Requires** the [`second-brain`](https://github.com/weirdapps/second-brain) knowledge store, which is currently a private GitHub repo.
+Optional companion to the [`mail`](../mail/) plugin. Adds two corpus-driven commands plus the daily style-sync helper. **Requires** the [`second-brain`](https://github.com/weirdapps/plessas-second-brain) knowledge store, which is currently a private GitHub repo.
 
-If you do not have access to `weirdapps/second-brain`, install only the `mail` plugin and skip this one — `mail` is fully functional without `mail-pro`.
+If you do not have access to `weirdapps/plessas-second-brain`, install only the `mail` plugin and skip this one — `mail` is fully functional without `mail-pro`.
 
 ## Commands
 
@@ -43,8 +43,8 @@ Three reasons:
 `mail-pro` is part of the `plessas-lab` marketplace. It auto-installs alongside the other plugins. To use the commands, you additionally need:
 
 ```bash
-git clone https://github.com/weirdapps/second-brain.git ~/SourceCode/second-brain
-cd ~/SourceCode/second-brain && cat README.md   # follow the setup steps
+git clone https://github.com/weirdapps/plessas-second-brain.git ~/SourceCode/plessas-second-brain
+cd ~/SourceCode/plessas-second-brain && cat README.md   # follow the setup steps
 ```
 
 If you don't have access to the private repo, ask the marketplace maintainer.

@@ -12,7 +12,7 @@ This command requires the **second-brain knowledge store** — a local SQLite da
 Before doing anything else, run:
 
 ```bash
-test -f ~/SourceCode/second-brain/data/brain.db && echo "ok" || echo "missing"
+test -f ~/SourceCode/plessas-second-brain/data/brain.db && echo "ok" || echo "missing"
 ```
 
 If the file is **missing**, stop immediately and tell the user verbatim:
@@ -24,19 +24,19 @@ If the file is **missing**, stop immediately and tell the user verbatim:
 > If you have access to `weirdapps`, install it:
 >
 > ```bash
-> git clone https://github.com/weirdapps/second-brain.git ~/SourceCode/second-brain
-> cd ~/SourceCode/second-brain && cat README.md   # follow the setup steps
+> git clone https://github.com/weirdapps/plessas-second-brain.git ~/SourceCode/plessas-second-brain
+> cd ~/SourceCode/plessas-second-brain && cat README.md   # follow the setup steps
 > ```
 >
 > If you do **not** have access, ask the marketplace maintainer to grant it, or skip this command — `/reply` and the rest of the `mail` plugin work without it (just without the corpus-driven style refinement).
 >
-> Once the database exists at `~/SourceCode/second-brain/data/brain.db`, re-run `/style-rebuild`.
+> Once the database exists at `~/SourceCode/plessas-second-brain/data/brain.db`, re-run `/style-rebuild`.
 
 Do NOT attempt to fall back to Outlook, Sent Items, or other data sources — the analysis is statistically meaningful only with the full ingested corpus.
 </preflight>
 
 <objective>
-Perform a comprehensive corpus analysis of ALL sent emails stored in the knowledge store (SQLite database at `~/SourceCode/second-brain/data/brain.db`) to generate a statistically-grounded style guide with per-recipient profiles.
+Perform a comprehensive corpus analysis of ALL sent emails stored in the knowledge store (SQLite database at `~/SourceCode/plessas-second-brain/data/brain.db`) to generate a statistically-grounded style guide with per-recipient profiles.
 
 User request: $ARGUMENTS
 </objective>
@@ -46,12 +46,12 @@ User request: $ARGUMENTS
 
 ### 1. Connect to Knowledge Store DB
 
-Open the SQLite database at `~/SourceCode/second-brain/data/brain.db`.
+Open the SQLite database at `~/SourceCode/plessas-second-brain/data/brain.db`.
 
 Verify tables exist:
 
 ```bash
-sqlite3 ~/SourceCode/second-brain/data/brain.db ".tables"
+sqlite3 ~/SourceCode/plessas-second-brain/data/brain.db ".tables"
 ```
 
 **Data source priority:**

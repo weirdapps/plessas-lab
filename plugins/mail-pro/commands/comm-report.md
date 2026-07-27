@@ -12,7 +12,7 @@ This command requires the **second-brain knowledge store** — a local SQLite da
 Before doing anything else, run:
 
 ```bash
-test -f ~/SourceCode/second-brain/data/brain.db && echo "ok" || echo "missing"
+test -f ~/SourceCode/plessas-second-brain/data/brain.db && echo "ok" || echo "missing"
 ```
 
 If the file is **missing**, stop immediately and tell the user verbatim:
@@ -24,19 +24,19 @@ If the file is **missing**, stop immediately and tell the user verbatim:
 > If you have access to `weirdapps`, install it:
 >
 > ```bash
-> git clone https://github.com/weirdapps/second-brain.git ~/SourceCode/second-brain
-> cd ~/SourceCode/second-brain && cat README.md   # follow the setup steps
+> git clone https://github.com/weirdapps/plessas-second-brain.git ~/SourceCode/plessas-second-brain
+> cd ~/SourceCode/plessas-second-brain && cat README.md   # follow the setup steps
 > ```
 >
 > If you do **not** have access, ask the marketplace maintainer to grant it, or skip this command — the rest of the `mail` plugin works without it.
 >
-> Once the database exists at `~/SourceCode/second-brain/data/brain.db`, re-run `/comm-report`.
+> Once the database exists at `~/SourceCode/plessas-second-brain/data/brain.db`, re-run `/comm-report`.
 
 Do NOT attempt to fall back to Outlook or live mailbox queries — this report's analytics rely on the full ingested corpus with classifications.
 </preflight>
 
 <objective>
-Generate a strategic communication health report powered by the knowledge store (SQLite database at `~/SourceCode/second-brain/data/brain.db`), covering relationship patterns, response behavior, delegation effectiveness, and language trends.
+Generate a strategic communication health report powered by the knowledge store (SQLite database at `~/SourceCode/plessas-second-brain/data/brain.db`), covering relationship patterns, response behavior, delegation effectiveness, and language trends.
 
 User request: $ARGUMENTS
 </objective>
@@ -67,7 +67,7 @@ Skip the Relationship Heatmap section (step 3) when filtering by a single recipi
 
 ### 2. Query Communication Volume
 
-From the knowledge store DB (`~/SourceCode/second-brain/data/brain.db`).
+From the knowledge store DB (`~/SourceCode/plessas-second-brain/data/brain.db`).
 
 **Data source note:** All analytics are powered exclusively by the knowledge store DB. Do NOT query Sent Items — the user regularly empties it. The user CCs himself on all replies, so sent emails appear in the Archive mailbox and are ingested into the DB.
 

@@ -34,7 +34,7 @@ STYLE_GUIDE = SCRIPT_DIR.parent.parent / "mail" / "shared" / "style-guide.md"
 
 # DB path defaults to a sibling second-brain checkout but is overridable via --db.
 # Teammates without second-brain installed must pass --db or this script exits.
-DB_PATH = Path.home() / "SourceCode/second-brain/data/brain.db"
+DB_PATH = Path.home() / "SourceCode/plessas-second-brain/data/brain.db"
 
 SYNC_STATE = Path.home() / ".claude/drafts/style-sync-state.json"
 BACKUP_DIR = Path.home() / ".claude/drafts/style-guide-backups"

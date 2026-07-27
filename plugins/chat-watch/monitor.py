@@ -667,7 +667,7 @@ def format_messages(msgs: list[NormalizedMessage]) -> str:
 # Second-brain integration
 # ---------------------------------------------------------------------------
 
-SECOND_BRAIN_SRC = Path("~/SourceCode/second-brain").expanduser()
+SECOND_BRAIN_SRC = Path("~/SourceCode/plessas-second-brain").expanduser()
 SECOND_BRAIN_DB = SECOND_BRAIN_SRC / "data" / "brain.db"
 
 _recall_conn: Any = None
