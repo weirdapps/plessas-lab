@@ -30,7 +30,7 @@ Recommended posture for a brand-new chat: keep `dry_run: true` for the first hou
 - `teams-cli` authenticated (`teams-cli auth-check` returns `status: ok`). Run `teams-cli login` if not.
 - `claude` CLI on PATH.
 - Python 3.11+.
-- Optional: second-brain repo at `~/SourceCode/second-brain` with `data/brain.db` (used for recall context — the monitor degrades gracefully if missing or locked).
+- Optional: second-brain repo at `~/SourceCode/plessas-second-brain` with `data/brain.db` (used for recall context — the monitor degrades gracefully if missing or locked).
 
 ## Run modes
 

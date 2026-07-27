@@ -104,7 +104,7 @@ Nothing sensitive is committed. Each plugin's README documents its own setup; su
 | `manage-nano-banana` | Either (a) Vertex AI via `GOOGLE_CLOUD_PROJECT` or `ANTHROPIC_VERTEX_PROJECT_ID` + ADC (`gemini-2.5-flash-image` only; defaults to `europe-west1`, override with `NANO_BANANA_VERTEX_LOCATION`), or (b) `GEMINI_API_KEY` from Google AI Studio (both models; required for `gemini-3-pro-image-preview`). |
 | `manage-youtube` | Discovery: no auth. Playlist management: Google Cloud project with YouTube Data API v3 + OAuth 2.0 Desktop client. Data cached at `~/.google-skills/youtube/`. |
 | `chat-watch` | `teams-cli auth-check` returns ok. Copy `chats.example.json` and `prompts/example_*.txt` into `~/.claude/chat-watch/` and edit. Keep `dry_run: true` for the first hour. |
-| `mail-pro` | Requires the private `weirdapps/second-brain` repo cloned at `~/SourceCode/second-brain/` with `data/brain.db` populated. Not portable. |
+| `mail-pro` | Requires the `weirdapps/plessas-second-brain` repo cloned at `~/SourceCode/plessas-second-brain/` with your own `data/brain.db` populated. Not portable. |
 | `ops-sync` | Expects the full `~/SourceCode/` layout, plus SSH access to the Hetzner VPS for systemd checks. |
 
 Secrets stay out of the repo through `.gitignore`: `node_modules/`, `.env` / `.env.local`, `*credentials*.json`, `token.json`, `*.pem`, `*.key`, `skill-key/`. Personal `chat-watch` config lives entirely under `~/.claude/chat-watch/`, outside the repo.

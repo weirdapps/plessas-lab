@@ -2,7 +2,7 @@
 
 > **Maintainer-only.** This plugin requires the maintainer's private `second-brain` SQLite database at `~/SourceCode/plessas-second-brain/data/brain.db` and hardcodes `SENDER_FILTER = "%plessas%"` in `scripts/style-sync.py`. It's installed from the `plessas-lab` marketplace because it's not portable as-is. If you're not the maintainer, the `mail` plugin in `plessas-marketplace` covers the cross-platform use cases.
 
-Optional companion to the [`mail`](../mail/) plugin. Adds two corpus-driven commands plus the daily style-sync helper. **Requires** the [`second-brain`](https://github.com/weirdapps/plessas-second-brain) knowledge store, which is currently a private GitHub repo.
+Optional companion to the [`mail`](../mail/) plugin. Adds two corpus-driven commands plus the daily style-sync helper. **Requires** the [`second-brain`](https://github.com/weirdapps/plessas-second-brain) knowledge store, which is a public GitHub repo.
 
 If you do not have access to `weirdapps/plessas-second-brain`, install only the `mail` plugin and skip this one — `mail` is fully functional without `mail-pro`.
 
@@ -35,8 +35,8 @@ The script writes to `plugins/mail/shared/style-guide.md` — i.e. it lives in `
 Three reasons:
 
 1. `second-brain` is a substantial parallel system (ingestion pipeline, weeks of email to populate, ongoing daily sync). Forcing every teammate to install it just to use the basic mail plugin would be wrong.
-2. `second-brain` is currently private. Public-marketplace plugins shouldn't have hard dependencies on private repos.
-3. Splitting makes the dependency boundary explicit. If `second-brain` ever becomes public (or gets replaced by a slimmer alternative), only `mail-pro` needs to change.
+2. `second-brain`'s engine is public, but `mail-pro` needs a populated personal database (weeks of your own email). A public-marketplace plugin shouldn't force that setup on everyone.
+3. Splitting makes the dependency boundary explicit. If `second-brain` gets replaced by a slimmer alternative, only `mail-pro` needs to change.
 
 ## Install
 

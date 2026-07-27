@@ -19,7 +19,7 @@ If the file is **missing**, stop immediately and tell the user verbatim:
 
 > `/comm-report` requires the second-brain knowledge store, which is not installed on this machine.
 >
-> The knowledge store is a local SQLite database that holds your full email corpus, classified and indexed. It ships in the `second-brain` repo, which is **currently a private GitHub repo** under the `weirdapps` organisation.
+> The knowledge store is a local SQLite database that holds your full email corpus, classified and indexed. It ships in the `second-brain` repo, which is **a public GitHub repo** under the `weirdapps` organisation.
 >
 > If you have access to `weirdapps`, install it:
 >
