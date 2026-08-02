@@ -21,7 +21,7 @@ All repos live flat under `~/SourceCode/`. VPS mirror at same path via `ssh vps`
 | outlook-access | ts | vitest | eslint | gha | master | no | priv |
 | plessas-lab | ts/py | vitest | ruff | gha | master | no | pub |
 | plessas-marketplace | py | — | ruff | gha | master | no | pub |
-| plessas-trading | py | pytest | ruff | gha | master | no | priv |
+| plessas-trading-stack | py | pytest | ruff | gha | master | no | priv |
 | remotion-private | ts | — | eslint | gha | master | no | priv |
 | remotion-studio | ts | vitest | eslint | gha | master | no | pub |
 | resume | ts | — | eslint | gha | master | no | pub |
