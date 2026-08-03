@@ -756,7 +756,7 @@ def build_prompt(
 # ---------------------------------------------------------------------------
 
 CLAUDE_TIMEOUT_SECONDS = 240
-CLAUDE_MODEL = os.environ.get("VERTEX_MODEL_HEAVY", "claude-opus-4-8[1m]")
+CLAUDE_MODEL = os.environ.get("VERTEX_MODEL_HEAVY", "claude-opus-5[1m]")
 MAX_LLM_ATTEMPTS = 3
 
 
@@ -808,8 +808,8 @@ def invoke_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT_SECONDS) -> str:
     """Invoke claude with model fallback. Raise ClaudeCliError on hard failure."""
     envelope = _claude_once(prompt, CLAUDE_MODEL, os.environ.get("CLOUD_ML_REGION"), timeout)
     if envelope.get("stop_reason") == "refusal" or envelope.get("is_error"):
-        fb_model = os.environ.get("VERTEX_MODEL_FALLBACK", "claude-opus-4-6[1m]")
-        fb_region = os.environ.get("VERTEX_REGION_FALLBACK", "europe-west1")
+        fb_model = os.environ.get("VERTEX_MODEL_FALLBACK", "claude-opus-5[1m]")
+        fb_region = os.environ.get("VERTEX_REGION_FALLBACK", "eu")
         log_event(
             "llm_downgrade",
             reason="policy_refusal" if envelope.get("stop_reason") == "refusal" else "api_error",
