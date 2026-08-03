@@ -2,6 +2,7 @@
 
 Experimental Claude Code plugins by [weirdapps](https://weirdapps.github.io/resume/). Everything in here needs a credential, a platform binding, or a private data store to be fully useful, which is why it lives in the "lab" rather than the stable [`plessas-marketplace`](https://github.com/weirdapps/plessas-marketplace).
 
+[![Checks](https://github.com/weirdapps/plessas-lab/actions/workflows/checks.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/checks.yml)
 [![Validate Plugins](https://github.com/weirdapps/plessas-lab/actions/workflows/validate-plugins.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/validate-plugins.yml)
 [![CodeQL](https://github.com/weirdapps/plessas-lab/actions/workflows/codeql.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/codeql.yml)
 [![PII Check](https://github.com/weirdapps/plessas-lab/actions/workflows/pii-check.yml/badge.svg)](https://github.com/weirdapps/plessas-lab/actions/workflows/pii-check.yml)
@@ -138,6 +139,10 @@ npm install
 npm test
 npm run test:coverage
 
+# Typecheck every plugin package (tsc --noEmit x4)
+npm run typecheck             # node_modules already installed
+npm run typecheck -- --install  # resolve each package's deps first (what CI does)
+
 # Python tests (chat-watch, manage-apple-notes; pytest with coverage)
 pytest
 
@@ -147,6 +152,10 @@ mypy .
 ```
 
 `pyproject.toml` pins Python 3.11, a ruff rulepack of E, W, F, I, B, C4, UP, and runs pytest with `--cov` so SonarCloud always gets a fresh `coverage.xml`. `package.json` requires Node 20+.
+
+Each plugin keeps its own `package.json`, `tsconfig.json` and `node_modules` instead of sharing a workspace, so `scripts/typecheck.sh` walks them explicitly. Its package list must stay in sync with the npm entries in `.github/dependabot.yml`. Lockfiles are gitignored repo-wide, which is why every install path uses `npm install` rather than `npm ci`.
+
+The packages build with TypeScript 7, the Go-native compiler. Two of the TypeScript 6/7 defaults matter when editing a `tsconfig.json` here: `types` no longer defaults to every installed `@types` package, so each config lists `"types": ["node"]` explicitly, and `strict` is on unless disabled. Removing those `types` entries reintroduces several hundred "Cannot find name 'process'" errors.
 
 Adding a new plugin:
 
@@ -158,15 +167,16 @@ Adding a new plugin:
 
 ## Continuous integration
 
-Seven workflows under `.github/workflows/`:
+Eight workflows under `.github/workflows/`:
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
+| `checks.yml` | push / PR on master | Blocking test gate. `node` job typechecks all four TypeScript packages with `tsc --noEmit` and runs vitest; `python` job runs pytest. Nothing else in CI compiles the TypeScript, and `sonarcloud.yml` runs pytest non-blocking so it can still upload coverage. |
 | `validate-plugins.yml` | push / PR on master | `marketplace.json` and every `plugin.json` are valid JSON with the required fields; per-plugin README present; every command has YAML frontmatter; also runs `scripts/validate_consistency.py`. |
 | `codeql.yml` | push / PR / weekly cron | GitHub CodeQL for JavaScript and TypeScript. |
 | `pii-check.yml` | push / PR | Runs `installers/pii-gauntlet.sh --mode=ci` to scan git-tracked files for personal data. |
 | `rename-guard.yml` | push / PR | Fails if a legacy pre-rename project name (from the 2026-05-09 renames) leaks back into tracked files. |
-| `sonarcloud.yml` | push / PR / manual | Runs tests with coverage and, when `SONAR_TOKEN` is set, uploads to SonarCloud. |
+| `sonarcloud.yml` | push / PR / manual | Runs tests with coverage and, when `SONAR_TOKEN` is set, uploads to SonarCloud. Deliberately non-blocking; `checks.yml` is the gate. |
 | `deps-refresh.yml` | monthly cron (22nd, 07:11 UTC) | Delegates to `weirdapps/shared-workflows` monthly refresh; gate is `npm test`. |
 | `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges minor and patch bumps. |
 

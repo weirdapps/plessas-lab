@@ -3,6 +3,7 @@
 import json
 import sqlite3
 import sys
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -64,8 +65,13 @@ def _insert_message(
 
 
 @pytest.fixture
-def wa_adapter(wa_db: Path) -> monitor.WhatsAppAdapter:
-    return monitor.WhatsAppAdapter({"db_path": str(wa_db), "api_url": "http://localhost:9999"})
+def wa_adapter(wa_db: Path) -> Iterator[monitor.WhatsAppAdapter]:
+    # The adapter memoises its sqlite handle, so close it on teardown. Letting
+    # the GC finalise it emits an unraisable ResourceWarning that pyproject's
+    # filterwarnings = ["error"] turns into a failure on an unrelated test.
+    adapter = monitor.WhatsAppAdapter({"db_path": str(wa_db), "api_url": "http://localhost:9999"})
+    yield adapter
+    adapter.close()
 
 
 # ---------------------------------------------------------------------------
@@ -273,10 +279,13 @@ def test_wa_run_once_cold_start(wa_db, tmp_path, monkeypatch):
     )
     adapter = monitor.WhatsAppAdapter({"db_path": str(wa_db)})
 
-    with patch.object(
-        monitor.ChatConfig, "state_file", new_callable=lambda: property(lambda self: state_path)
-    ):
-        monitor.run_once_for_chat(cfg, adapter, now=datetime.now(UTC), dry_run=True)
+    try:
+        with patch.object(
+            monitor.ChatConfig, "state_file", new_callable=lambda: property(lambda self: state_path)
+        ):
+            monitor.run_once_for_chat(cfg, adapter, now=datetime.now(UTC), dry_run=True)
+    finally:
+        adapter.close()
 
     state = monitor.load_state(state_path)
     assert state[monitor._CURSOR_KEY] == "2026-06-26T18:00:00+03:00"

@@ -301,9 +301,9 @@ npx tsx search.ts --query "python course" \
 **Search filter options**:
 
 - `--type`: video, channel, playlist
-- `--upload-date`: hour, today, week, month, year
-- `--duration`: short (<4min), medium (4-20min), long (>20min)
-- `--sort`: relevance, upload_date, view_count, rating
+- `--upload-date`: today, week, month, year
+- `--duration`: short (<3min), medium (3-20min), long (>20min)
+- `--sort`: relevance, view_count
 </search_operations>
 
 <transcript_operations>
