@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `--upload-date hour` and `--sort upload_date|rating` are no longer advertised; InnerTube has no equivalent. Unknown filter values now fail with a clear message instead of being passed through.
 - Ten pre-existing type errors across `manage-gmail` and `manage-youtube` that had never been caught because nothing ran `tsc`.
 
+### Not taken
+
+- `google-auth-library` 10 → 11. It typechecks clean, but v11 declares `engines.node >= 22` against this repo's `>=20` floor and Node 20 CI, and `googleapis` still pins `10.5.0` exactly, so the `overrides` block would run Google's own client against an untested auth major. Held at `^10` until `googleapis` moves.
+
 ## [1.2.0] — 2026-05-11
 
 ### Added
