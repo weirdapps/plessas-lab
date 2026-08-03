@@ -87,6 +87,10 @@ Eight GitHub Actions workflows (`.github/workflows/`):
 - `manage-gmail` and `manage-youtube/.../playlist-tools` pin a single `google-auth-library`
   through an `overrides` block. `OAuth2Client` carries private fields, so two copies in one tree
   are structurally incompatible and every `google.gmail({ auth })` call stops typechecking.
+- Hold `google-auth-library` at `^10`. v11 typechecks fine but declares `engines.node >= 22`,
+  above this repo's `>=20` floor and the Node 20 CI runs, and `googleapis` still pins `10.5.0`
+  exactly, so the override would run Google's own client against an untested auth major. Revisit
+  once `googleapis` moves to v11 and the Node floor is raised in step.
 
 ## Relationship to Other Repos
 
