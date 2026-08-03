@@ -1,12 +1,17 @@
 #!/usr/bin/env npx tsx
 // Search YouTube for videos, channels, or playlists
-// Usage: npx tsx search.ts --query <search_query> [--type video|channel|playlist] [--limit N] [--upload-date hour|today|week|month|year] [--sort relevance|upload_date|view_count|rating] [--json]
+// Usage: npx tsx search.ts --query <search_query> [--type video|channel|playlist] [--limit N] [--upload-date today|week|month|year] [--duration short|medium|long] [--sort relevance|view_count] [--json]
 
 import youtubeSr from 'youtube-sr';
+import type { Types } from 'youtubei.js';
 import {
   getClient,
   SearchResult,
   SearchFilters,
+  UPLOAD_DATES,
+  DURATIONS,
+  SORT_ORDERS,
+  RESULT_TYPES,
   parseArgs,
   formatOutput,
   printStatus,
@@ -14,6 +19,46 @@ import {
 } from './youtube-client.js';
 
 const YouTube = youtubeSr.YouTube;
+
+// InnerTube expresses duration as explicit minute ranges rather than
+// short/medium/long, so translate at the API boundary. Passing the CLI
+// vocabulary straight through silently disabled the filter.
+const DURATION_TO_INNERTUBE: Record<
+  (typeof DURATIONS)[number],
+  Types.Duration
+> = {
+  short: 'under_three_mins',
+  medium: 'three_to_twenty_mins',
+  long: 'over_twenty_mins',
+};
+
+// InnerTube calls the ordering knob `prioritize`, and only offers relevance vs
+// popularity. The previous `sort_by` key was not part of its filter shape and
+// was dropped on the floor.
+const SORT_TO_INNERTUBE: Record<
+  (typeof SORT_ORDERS)[number],
+  Types.Prioritize
+> = {
+  relevance: 'relevance',
+  view_count: 'popularity',
+};
+
+/**
+ * Resolve a raw CLI argument against the values the API accepts, exiting with a
+ * usable message instead of forwarding an unsupported value to YouTube.
+ */
+function parseChoice<T extends string>(
+  value: string,
+  allowed: readonly T[],
+  flag: string
+): T {
+  const match = allowed.find((candidate) => candidate === value);
+  if (match !== undefined) {
+    return match;
+  }
+  printStatus(`Invalid ${flag}: "${value}". Expected one of: ${allowed.join(', ')}`, 'ERROR');
+  process.exit(1);
+}
 
 async function searchWithInnertube(
   query: string,
@@ -23,9 +68,9 @@ async function searchWithInnertube(
   const client = await getClient();
 
   const searchResults = await client.search(query, {
-    sort_by: filters.sortBy || 'relevance',
+    prioritize: SORT_TO_INNERTUBE[filters.sortBy || 'relevance'],
     upload_date: filters.uploadDate,
-    duration: filters.duration,
+    duration: filters.duration ? DURATION_TO_INNERTUBE[filters.duration] : undefined,
     type: filters.type || 'video',
   });
 
@@ -100,9 +145,9 @@ async function main() {
       { flag: '--query <search_query>', description: 'Search query', required: true },
       { flag: '--type <video|channel|playlist>', description: 'Result type (default: video)' },
       { flag: '--limit <N>', description: 'Number of results (default: 10)' },
-      { flag: '--upload-date <value>', description: 'Filter: hour, today, week, month, year' },
+      { flag: '--upload-date <value>', description: 'Filter: today, week, month, year' },
       { flag: '--duration <value>', description: 'Filter: short, medium, long' },
-      { flag: '--sort <value>', description: 'Sort: relevance, upload_date, view_count, rating' },
+      { flag: '--sort <value>', description: 'Sort: relevance, view_count' },
     ]);
     process.exit(0);
   }
@@ -115,9 +160,9 @@ async function main() {
       { flag: '--query <search_query>', description: 'Search query', required: true },
       { flag: '--type <video|channel|playlist>', description: 'Result type (default: video)' },
       { flag: '--limit <N>', description: 'Number of results (default: 10)' },
-      { flag: '--upload-date <value>', description: 'Filter: hour, today, week, month, year' },
+      { flag: '--upload-date <value>', description: 'Filter: today, week, month, year' },
       { flag: '--duration <value>', description: 'Filter: short, medium, long' },
-      { flag: '--sort <value>', description: 'Sort: relevance, upload_date, view_count, rating' },
+      { flag: '--sort <value>', description: 'Sort: relevance, view_count' },
     ]);
     process.exit(1);
   }
@@ -127,16 +172,20 @@ async function main() {
 
     const filters: SearchFilters = {};
     if (args['type']) {
-      filters.type = args['type'] as 'video' | 'channel' | 'playlist';
+      filters.type = parseChoice(String(args['type']), RESULT_TYPES, '--type');
     }
     if (args['upload-date']) {
-      filters.uploadDate = args['upload-date'] as 'hour' | 'today' | 'week' | 'month' | 'year';
+      filters.uploadDate = parseChoice(
+        String(args['upload-date']),
+        UPLOAD_DATES,
+        '--upload-date'
+      );
     }
     if (args['duration']) {
-      filters.duration = args['duration'] as 'short' | 'medium' | 'long';
+      filters.duration = parseChoice(String(args['duration']), DURATIONS, '--duration');
     }
     if (args['sort']) {
-      filters.sortBy = args['sort'] as 'relevance' | 'upload_date' | 'view_count' | 'rating';
+      filters.sortBy = parseChoice(String(args['sort']), SORT_ORDERS, '--sort');
     }
 
     printStatus(`Searching YouTube for: "${query}"...`);

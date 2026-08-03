@@ -1,0 +1,58 @@
+name: Checks
+
+# The other workflows validate manifests, names, PII and security. None of them
+# compiled the TypeScript, and sonarcloud.yml runs pytest behind
+# `continue-on-error` + `|| true` so it can still upload coverage. That left
+# type errors and failing tests able to land on master unnoticed. This is the
+# blocking gate.
+
+"on":
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: typecheck + vitest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+
+      # package-lock.json is gitignored across this repo, so `npm ci` cannot be
+      # used here or in scripts/typecheck.sh.
+      - name: Install root dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck every plugin package
+        run: npm run typecheck -- --install
+
+      - name: Run vitest
+        run: npm test
+
+  python:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      # chat-watch and manage-apple-notes import only the standard library at
+      # test time, so pytest is the whole dependency set.
+      - name: Install pytest
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+
+      - name: Run pytest
+        run: pytest

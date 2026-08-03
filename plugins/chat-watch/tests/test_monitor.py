@@ -430,8 +430,15 @@ def test_invoke_claude_default_timeout_is_at_least_240_seconds():
 
 
 def test_invoke_claude_downgrades_on_policy_refusal(tmp_path, monkeypatch):
-    """A spurious 'anthropic policy' refusal auto-retries on the fallback tier."""
+    """A spurious 'anthropic policy' refusal auto-retries on the fallback tier.
+
+    The fallback model and region come from VERTEX_MODEL_FALLBACK /
+    VERTEX_REGION_FALLBACK, so pin sentinels rather than whichever model is
+    currently the default. The default itself is covered separately below.
+    """
     monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
+    monkeypatch.setenv("VERTEX_MODEL_FALLBACK", "sentinel-fallback-model")
+    monkeypatch.setenv("VERTEX_REGION_FALLBACK", "sentinel-region")
     refusal = _claude_envelope("I can't help with that.", stop_reason="refusal")
     ok = _claude_envelope("REPLY_OK")
     with patch("subprocess.run", side_effect=[refusal, ok]) as mock_run:
@@ -439,20 +446,40 @@ def test_invoke_claude_downgrades_on_policy_refusal(tmp_path, monkeypatch):
     assert out == "REPLY_OK"
     assert mock_run.call_count == 2
     second = mock_run.call_args_list[1]
-    assert "claude-opus-4-6[1m]" in second[0][0]
-    assert second[1]["env"]["CLOUD_ML_REGION"] == "europe-west1"
+    assert "sentinel-fallback-model" in second[0][0]
+    assert second[1]["env"]["CLOUD_ML_REGION"] == "sentinel-region"
 
 
 def test_invoke_claude_downgrades_on_api_error(tmp_path, monkeypatch):
     """An is_error envelope (e.g. a 429) also triggers the fallback retry."""
     monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
+    monkeypatch.setenv("VERTEX_MODEL_FALLBACK", "sentinel-fallback-model")
     err = _claude_envelope("API Error: 429 quota", stop_reason="stop_sequence", is_error=True)
     ok = _claude_envelope("REPLY_OK")
     with patch("subprocess.run", side_effect=[err, ok]) as mock_run:
         out = monitor.invoke_claude("test prompt")
     assert out == "REPLY_OK"
     assert mock_run.call_count == 2
-    assert "claude-opus-4-6[1m]" in mock_run.call_args_list[1][0][0]
+    assert "sentinel-fallback-model" in mock_run.call_args_list[1][0][0]
+
+
+def test_invoke_claude_fallback_defaults_to_opus_5_eu(tmp_path, monkeypatch):
+    """With no VERTEX_MODEL_FALLBACK override the retry lands on Opus 5 @ eu.
+
+    Owner decision, 2026-08-03: the fallback tier is the same model class as the
+    primary, so it absorbs transient errors but is no longer an escape hatch to
+    an older model.
+    """
+    monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
+    monkeypatch.delenv("VERTEX_MODEL_FALLBACK", raising=False)
+    monkeypatch.delenv("VERTEX_REGION_FALLBACK", raising=False)
+    refusal = _claude_envelope("I can't help with that.", stop_reason="refusal")
+    ok = _claude_envelope("REPLY_OK")
+    with patch("subprocess.run", side_effect=[refusal, ok]) as mock_run:
+        assert monitor.invoke_claude("test prompt") == "REPLY_OK"
+    second = mock_run.call_args_list[1]
+    assert "claude-opus-5[1m]" in second[0][0]
+    assert second[1]["env"]["CLOUD_ML_REGION"] == "eu"
 
 
 # ---------------------------------------------------------------------------

@@ -878,9 +878,9 @@ interface SearchResult {
 }
 
 interface SearchFilters {
-  uploadDate?: 'hour' | 'today' | 'week' | 'month' | 'year';
+  uploadDate?: 'today' | 'week' | 'month' | 'year';
   duration?: 'short' | 'medium' | 'long';
-  sortBy?: 'relevance' | 'upload_date' | 'view_count' | 'rating';
+  sortBy?: 'relevance' | 'view_count';
   type?: 'video' | 'channel' | 'playlist';
 }
 
@@ -904,10 +904,16 @@ export class ContentSearchService {
       throw new Error('Client not initialized');
     }
 
+    // InnerTube names the ordering knob `prioritize` and buckets duration by
+    // minute ranges, so the friendlier CLI vocabulary is translated here.
     const searchResults = await this.innertubeClient.search(query, {
-      sort_by: filters.sortBy || 'relevance',
+      prioritize: filters.sortBy === 'view_count' ? 'popularity' : 'relevance',
       upload_date: filters.uploadDate,
-      duration: filters.duration,
+      duration: filters.duration
+        ? ({ short: 'under_three_mins', medium: 'three_to_twenty_mins', long: 'over_twenty_mins' } as const)[
+            filters.duration
+          ]
+        : undefined,
       type: filters.type || 'video',
     });
 
@@ -1045,7 +1051,7 @@ interface TopicConfig {
   name: string;
   keywords: string[];
   filters?: {
-    uploadDate?: 'hour' | 'today' | 'week' | 'month' | 'year';
+    uploadDate?: 'today' | 'week' | 'month' | 'year';
     minViews?: number;
   };
 }

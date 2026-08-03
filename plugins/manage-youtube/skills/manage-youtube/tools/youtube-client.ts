@@ -73,11 +73,21 @@ export interface SearchResult {
   source: 'innertube' | 'youtube-sr';
 }
 
+// Accepted values are constrained by what InnerTube actually supports. It has
+// no "last hour" upload bucket and only orders by relevance or popularity, so
+// those are the values offered; `duration` keeps the friendlier
+// short/medium/long vocabulary and search.ts translates it into InnerTube's
+// minute-range buckets.
+export const UPLOAD_DATES = ['today', 'week', 'month', 'year'] as const;
+export const DURATIONS = ['short', 'medium', 'long'] as const;
+export const SORT_ORDERS = ['relevance', 'view_count'] as const;
+export const RESULT_TYPES = ['video', 'channel', 'playlist'] as const;
+
 export interface SearchFilters {
-  uploadDate?: 'hour' | 'today' | 'week' | 'month' | 'year';
-  duration?: 'short' | 'medium' | 'long';
-  sortBy?: 'relevance' | 'upload_date' | 'view_count' | 'rating';
-  type?: 'video' | 'channel' | 'playlist';
+  uploadDate?: (typeof UPLOAD_DATES)[number];
+  duration?: (typeof DURATIONS)[number];
+  sortBy?: (typeof SORT_ORDERS)[number];
+  type?: (typeof RESULT_TYPES)[number];
 }
 
 export interface TranscriptSegment {

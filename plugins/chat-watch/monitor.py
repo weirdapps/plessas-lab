@@ -217,6 +217,9 @@ class ServiceAdapter(ABC):
         """Attempt to renew auth. Returns True on success."""
         return True
 
+    def close(self) -> None:  # noqa: B027
+        """Release any long-lived resource the adapter holds. Safe to re-call."""
+
 
 # ---------------------------------------------------------------------------
 # Teams CLI helpers (module-level for backward-compat test mocking)
@@ -341,6 +344,19 @@ class WhatsAppAdapter(ServiceAdapter):
             self._conn.row_factory = sqlite3.Row
         return self._conn
 
+    def close(self) -> None:
+        """Release the cached handle on the WhatsApp bridge DB.
+
+        The adapter memoises one connection for the life of the process. Without
+        an explicit release the handle is only reclaimed when the object is
+        finalised, which raises an unraisable ResourceWarning.
+        """
+        if self._conn is not None:
+            try:
+                self._conn.close()
+            finally:
+                self._conn = None
+
     def _resolve_sender(self, sender_jid: str) -> str:
         try:
             conn = self._get_conn()
@@ -419,7 +435,7 @@ class WhatsAppAdapter(ServiceAdapter):
             conn = self._get_conn()
             conn.execute("SELECT COUNT(*) FROM messages LIMIT 1")
         except Exception as exc:  # noqa: BLE001
-            self._conn = None
+            self.close()
             raise AdapterAuthError(f"WhatsApp DB not readable: {exc}") from exc
 
     def renew_auth(self) -> bool:
