@@ -12,7 +12,7 @@ Operations supported include: list/search messages, read message bodies + header
 
 - A Google account with Gmail.
 - A Google Cloud project with the **Gmail API** enabled and an OAuth 2.0 **Desktop** client.
-- Node.js 18+ (for the underlying CLI).
+- Node.js 22+ (for the underlying CLI — `google-auth-library` 11 requires it).
 
 ## Installation
 

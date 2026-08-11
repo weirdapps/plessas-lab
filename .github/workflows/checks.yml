@@ -24,7 +24,10 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7
         with:
-          node-version: '20'
+          # google-auth-library 11 declares engines.node >= 22, so the whole
+          # repo floor moved with it. Keep this in step with engines.node in
+          # package.json and with node_version in deps-refresh.yml.
+          node-version: '22'
 
       # package-lock.json is gitignored across this repo, so `npm ci` cannot be
       # used here or in scripts/typecheck.sh.

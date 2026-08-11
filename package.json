@@ -5,7 +5,7 @@
   "private": true,
   "description": "Lab marketplace: mail-pro (second-brain email comms), Apple Notes (macOS only), Gmail, Nano Banana, YouTube, and chat-watch (Teams monitor with LLM gate)",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "test": "vitest run",
