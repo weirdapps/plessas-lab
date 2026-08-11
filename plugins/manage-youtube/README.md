@@ -15,7 +15,7 @@ You only need OAuth setup if you want playlist management. Discovery tools work 
 
 ## Prerequisites
 
-- Node.js 18+ (for the TypeScript CLI).
+- Node.js 22+ (for the TypeScript CLI — `google-auth-library` 11 requires it).
 - For **playlist management only**: a Google Cloud project with **YouTube Data API v3** enabled and an OAuth 2.0 Desktop client.
 
 ## Installation
