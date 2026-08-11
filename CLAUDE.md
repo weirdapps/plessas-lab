@@ -87,10 +87,14 @@ Eight GitHub Actions workflows (`.github/workflows/`):
 - `manage-gmail` and `manage-youtube/.../playlist-tools` pin a single `google-auth-library`
   through an `overrides` block. `OAuth2Client` carries private fields, so two copies in one tree
   are structurally incompatible and every `google.gmail({ auth })` call stops typechecking.
-- Hold `google-auth-library` at `^10`. v11 typechecks fine but declares `engines.node >= 22`,
-  above this repo's `>=20` floor and the Node 20 CI runs, and `googleapis` still pins `10.5.0`
-  exactly, so the override would run Google's own client against an untested auth major. Revisit
-  once `googleapis` moves to v11 and the Node floor is raised in step.
+- `google-auth-library` is on `^11` (taken 2026-08-11; the earlier `^10` hold is lifted). v11's
+  sole breaking change is `engines.node >= 22`, which is why the repo floor and both CI workflows
+  are on Node 22 — keep `engines.node`, `checks.yml` and `deps-refresh.yml` moving together.
+  `googleapis` still pins `10.5.0` exactly and the `overrides` block still forces it onto v11;
+  that is safe because v11 removed nothing (`oauth2client.d.ts` is identical to 10.5.0's and the
+  only type changes are widenings), and a request through `googleapis` into a v11 `OAuth2Client`
+  was verified end to end to still attach the bearer token. Re-check that claim, not just `tsc`,
+  before taking the next auth major.
 
 ## Relationship to Other Repos
 
