@@ -21,16 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `googleapis` `^173.0.0` → `^174.0.0` in `manage-gmail` and `playlist-tools`, which pins `google-auth-library` to a single exact version instead of two incompatible copies.
 - `actions/setup-python` 6 → 7 in `sonarcloud.yml`.
 - vitest `testTimeout` and `hookTimeout` raised to 60s. The suite re-imports plugin sources per test, and the first cold import exceeded the 5s default.
+- `google-auth-library` `^10.5.0` → `^11.0.0` in `manage-gmail` and `playlist-tools`. v11's only breaking change is `engines.node >= 22`; no export or `.d.ts` was removed and `oauth2client.d.ts` is unchanged from the 10.5.0 that `googleapis` pins, so the `overrides` collapse onto v11 is safe. Verified end to end: a request through `googleapis` 174.0.1 into an 11.0.1 `OAuth2Client` still attaches the bearer token.
+- **Node floor 20 → 22**, in step with the above: `engines.node` in the root package, `manage-gmail`'s scripts (was `>=18.0.0`) and `playlist-tools` (previously undeclared), plus `checks.yml` and `deps-refresh.yml`. Installing these plugins now requires Node 22.
 
 ### Fixed
 
 - `search.ts` sent filter values InnerTube does not accept, so `--duration` and `--sort` were silently ignored. `short`/`medium`/`long` now map to InnerTube's minute buckets and `--sort` maps to its `prioritize` field.
 - `--upload-date hour` and `--sort upload_date|rating` are no longer advertised; InnerTube has no equivalent. Unknown filter values now fail with a clear message instead of being passed through.
 - Ten pre-existing type errors across `manage-gmail` and `manage-youtube` that had never been caught because nothing ran `tsc`.
-
-### Not taken
-
-- `google-auth-library` 10 → 11. It typechecks clean, but v11 declares `engines.node >= 22` against this repo's `>=20` floor and Node 20 CI, and `googleapis` still pins `10.5.0` exactly, so the `overrides` block would run Google's own client against an untested auth major. Held at `^10` until `googleapis` moves.
 
 ## [1.2.0] — 2026-05-11
 
