@@ -78,7 +78,7 @@ Eight GitHub Actions workflows (`.github/workflows/`):
   `plessas-marketplace` instead.
 - `ops-sync` expects the full `~/SourceCode/` repo layout plus SSH access to the Hetzner VPS
   (167.233.42.38) for systemd timer checks.
-- Python 3.11+, Node.js 20+; TypeScript tests via vitest (`vitest.config.ts`).
+- Python 3.11+, Node.js 22+; TypeScript tests via vitest (`vitest.config.ts`).
 - TypeScript 7 (the Go-native compiler) across all packages. Two TS 6/7 rules bite here: `types`
   no longer defaults to every `@types` package, so each `tsconfig.json` sets `"types": ["node"]`
   explicitly; and `strict` is on by default. Do not remove those `types` entries.
