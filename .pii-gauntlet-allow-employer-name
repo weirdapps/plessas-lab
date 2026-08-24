@@ -1,0 +1,6 @@
+The employer name appears here inside a shipped command name
+(/create-nbg-infographic) and the skill directory that backs it. Renaming those
+is an API change for anyone who has the plugin installed, not a redaction. The
+employer-name check is therefore opted out for this repository. Every other
+check still runs, including the mail domain, tenant host, and the private name
+denylist.

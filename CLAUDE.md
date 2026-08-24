@@ -77,7 +77,7 @@ Eight GitHub Actions workflows (`.github/workflows/`):
 - `mail-pro` requires the private `second-brain` knowledge store; without it, use `mail` from
   `plessas-marketplace` instead.
 - `ops-sync` expects the full `~/SourceCode/` repo layout plus SSH access to the Hetzner VPS
-  (167.233.42.38) for systemd timer checks.
+  (reached via the `vps` SSH alias) for systemd timer checks.
 - Python 3.11+, Node.js 22+; TypeScript tests via vitest (`vitest.config.ts`).
 - TypeScript 7 (the Go-native compiler) across all packages. Two TS 6/7 rules bite here: `types`
   no longer defaults to every `@types` package, so each `tsconfig.json` sets `"types": ["node"]`

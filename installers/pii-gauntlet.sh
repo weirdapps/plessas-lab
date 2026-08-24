@@ -47,9 +47,19 @@ INFO=0
 if [ "$MODE" = "ci" ]; then
   # Exclude self + auto-generated lockfiles at any depth (lockfiles contain SHAs / hashes that
   # collide with the 9-digit-ID regex but carry no PII risk).
+  # User-cleared public showcase assets (maintainer confirmed 2026-06-08): the
+  # decks screenshot library is public-safe, and its INDEX.md captions legitimately
+  # name NBG products (dual card, Skroutz, …). Exclude that subtree from scanning.
+  # This script's path relative to the repo root. Derived, not hardcoded: the
+  # same file lives in installers/ in some repos and scripts/ in others, and
+  # six hand-maintained copies is what let them drift apart in the first place.
+  SELF_REL=$(git ls-files --full-name -- "$0" 2>/dev/null | head -1)
+  [ -z "$SELF_REL" ] && SELF_REL="installers/pii-gauntlet.sh"
   TRACKED=$(git ls-files \
-    | grep -v '^installers/pii-gauntlet.sh$' \
+    | grep -v "^$SELF_REL$" \
+    | grep -vE '(^|/)LICENSE(\.md|\.txt)?$' \
     | grep -vE '(^|/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Pipfile\.lock)$' \
+    | grep -vE '^plugins/decks/assets/screenshots/' \
     || true)
   TRACKED_TMP=$(mktemp)
   printf '%s\n' "$TRACKED" > "$TRACKED_TMP"
@@ -72,28 +82,50 @@ scan_doctor() {
     --exclude-dir=.remember \
     --exclude-dir=installers/deps \
     --exclude=pii-gauntlet.sh \
+    --exclude=LICENSE \
     --exclude=PII-GAUNTLET.md \
     --exclude=package-lock.json \
     --binary-files=without-match \
-    "$pattern" . 2>/dev/null || true
+    "$pattern" . 2>/dev/null \
+    | grep -vE 'plugins/decks/assets/screenshots/' \
+    || true
 }
 
 scan_ci() {
   local pattern="$1"
-  # Search only git-tracked files. xargs grep with -l would short-circuit but
-  # we want line-level hits.
+  # Search only git-tracked files. NUL-delimit the list and use `xargs -0`
+  # (portable on BSD/macOS and GNU). The old `xargs -a FILE -d '\n'` form is
+  # GNU-only: on macOS it errors "invalid option -- a", gets swallowed by
+  # 2>/dev/null, and the gate silently PASSES while scanning nothing.
   if [ -s "$TRACKED_TMP" ]; then
-    xargs -a "$TRACKED_TMP" -d '\n' grep -nE --binary-files=without-match "$pattern" 2>/dev/null || true
+    tr '\n' '\0' < "$TRACKED_TMP" | xargs -0 grep -nE --binary-files=without-match "$pattern" 2>/dev/null || true
   fi
+}
+
+# Drop hits whose PATH is a historical record rather than live configuration.
+# Path-scoped only. Never extend this to filter on matched content: that would
+# hide live hits and turn a working guardrail into a false green.
+apply_exclusion() {
+  local hits="$1"
+  local exclude="$2"
+  if [ -z "$exclude" ] || [ -z "$hits" ]; then
+    printf '%s' "$hits"
+    return
+  fi
+  # Copyright attribution names the author on purpose and is required by the
+  # licence. Flagging it is noise, and noise is how a real hit gets ignored.
+  printf '%s\n' "$hits" | grep -vE "$exclude" | grep -viE '\(c\)[[:space:]]*[0-9]{4}|copyright' || true
 }
 
 check() {
   local label="$1"
   local pattern="$2"
+  local exclude="${3:-}"
   local hits
 
   if [ "$MODE" = "ci" ]; then
     hits=$(scan_ci "$pattern")
+    hits=$(apply_exclusion "$hits" "$exclude")
     if [ -n "$hits" ]; then
       echo "FAIL [$label]:"
       echo "$hits" | head -20
@@ -107,6 +139,7 @@ check() {
 
   # Doctor mode — separate tracked from gitignored.
   hits=$(scan_doctor "$pattern")
+  hits=$(apply_exclusion "$hits" "$exclude")
   if [ -z "$hits" ]; then
     echo "OK   [$label]"
     return
@@ -144,45 +177,97 @@ check() {
 }
 
 # ---------------------------------------------------------------------------
-# Patterns (shared between modes)
 # ---------------------------------------------------------------------------
+# Generic organisation tells (safe to keep in a public repo)
+# ---------------------------------------------------------------------------
+#
+# These are patterns, not names, so publishing them discloses nothing. They are
+# also the checks that were missing entirely: the four exposures found in the
+# 2026-08-24 audit all passed the gauntlet green, because nothing here looked
+# for the employer's name, its mail domain, or a tenant hostname.
 
-# Personal name (full forms — single-word "plessas" is the brand name, OK)
-check "Full personal name (EN)" "Dimitris[[:space:]]+Plessas|Dimitrios[[:space:]]+Plessas"
-check "Full personal name (GR)" "Δημήτριος[[:space:]]+Πλέσσας|ΠΛΕΣΣΑΣ[[:space:]]+ΔΗΜΗΤΡΙΟΣ"
+# Placeholders are the whole point of a good example, so they must not trip the
+# check that exists to catch the real thing. Without these excludes the gauntlet
+# flags `contoso.sharepoint.com` (the correct placeholder) and its own CHANGELOG
+# entries describing the removal of the real host. A check that fires on
+# deliberate, already-disclosed content teaches you to ignore it, which is how
+# the four real exposures sat unnoticed next to a green gauntlet.
+# Doc placeholders. Extend this when a new invented example host trips the check:
+# being asked once "is this a real tenant?" is the check doing its job, and is a
+# far better failure mode than the silence it replaces.
+PLACEHOLDER='contoso|example|sample|template|your[-_.]?tenant|your-tenant|<[^>]+>|firstname\.lastname|your\.email|recipient\.name|user@|name@|(test|overridden|envvar|dummy|placeholder|foo|bar|[a-z])(-my)?\.sharepoint'
 
-# Personal emails
-check "Personal email" "dimitrios\.plessas@|plessasdimitrios@|plessas@nbg\.gr|plessas@gmail|plessas@yahoo"
+# Some repos name the employer on purpose: a marketplace written for colleagues
+# says so in its README by design. Those opt out with a repo-root marker rather
+# than carrying a permanent red light.
+if [ ! -f ".pii-gauntlet-allow-employer-name" ]; then
+  check "Employer name" '(^|[^A-Za-z0-9])(NBG|ΕΤΕ)([^A-Za-z0-9]|$)|Εθνική Τράπεζα|National Bank of Greece' "$PLACEHOLDER"
+else
+  echo "OK   [Employer name] (opted out via .pii-gauntlet-allow-employer-name)"
+fi
 
-# Personal phone / address
-check "Personal phone" "694[[:space:]]?9200878|6949200878"
-check "Personal address" "174[[:space:]]+Syggrou|Συγγρού[[:space:]]+174"
+check "Employer mail domain" '[A-Za-z0-9._%+-]+@nbg\.gr' "$PLACEHOLDER"
+check "SharePoint tenant"    '[a-z0-9-]+\.sharepoint\.com' "$PLACEHOLDER"
+# A bare UUID is not a finding: fixtures, generated filenames and message ids
+# are full of them, and flagging all of them is how a check earns the right to
+# be ignored. What matters is a GUID sitting where a TENANT id sits, so key on
+# the surrounding context rather than on the shape alone.
+check "Azure AD tenant id" \
+  '(tenant[_-]?id|tenantId|\"tid\"|authority|login\.microsoftonline\.com/|realm)[^0-9a-f]{0,24}[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+  '00000000-0000-0000-0000-000000000000|11111111-2222-3333-4444-555555555555|00000000-|11111111-|22222222-|33333333-|44444444-|55555555-|66666666-|77777777-|88888888-|99999999-|aaaaaaaa-|bbbbbbbb-|cccccccc-|dddddddd-|eeeeeeee-|ffffffff-|/common|/organizations|/consumers'
 
-# Greek tax IDs (9-digit standalone, with word boundaries)
-check "9-digit ID pattern" "[^0-9a-fA-F][0-9]{9}[^0-9a-fA-F]"
+# ---------------------------------------------------------------------------
+# Name-based checks, loaded from a private denylist
+# ---------------------------------------------------------------------------
+#
+# The literal terms used to live in this file. That made the guard the
+# disclosure: this script is anonymously readable, and it enumerated colleague
+# names, a family name, a personal mobile and address, personal emails,
+# unreleased internal project names, the partner list and every private repo
+# path, complete with comment headers explaining which was which.
+#
+# They now live outside every public repo. Nothing here reveals what is checked.
 
-# Peer names (NBG colleagues / direct reports / managers)
-check "Peer/colleague names" "Volioti|Bitrou|Sioutis|Theofilidi|Θεοφιλίδη|Χριστίνα|Lygeros|Oikonomou|Maraveas|Xona|Petropoulou|Laspas|Koutra|Giemelou"
+PII_DENYLIST="${PII_DENYLIST:-$HOME/.claude/private/pii-denylist.conf}"
 
-# Family names
-check "Family names" "Kitrilaki|Κιτριλάκη"
+if [ -r "$PII_DENYLIST" ]; then
+  # Tab-delimited: the patterns are full of regex alternation pipes, so "|"
+  # cannot be the field separator.
+  loaded=0
+  while IFS=$'\t' read -r label pattern exclude; do
+    case "$label" in ''|\#*) continue ;; esac
+    [ -z "$pattern" ] && continue
+    check "$label" "$pattern" "$exclude"
+    loaded=$((loaded + 1))
+  done < "$PII_DENYLIST"
+  echo "     ($loaded name-based checks loaded from the private denylist)"
+else
+  # Absence is handled differently by mode, on purpose.
+  #
+  # In CI on a public repo the denylist legitimately does not exist and never
+  # will, so failing here would just paint six repos red forever. Say plainly
+  # that the name checks did not run, and let the generic ones stand.
+  #
+  # Locally the file should always be there. Its absence is a real
+  # misconfiguration, and a guard that cannot evaluate its condition must
+  # refuse rather than pass. That distinction is the whole point: the previous
+  # version of this script reported OK on every check while, on macOS, scanning
+  # exactly zero files.
+  if [ "$MODE" = "ci" ]; then
+    echo "SKIP [name-based checks]: no denylist at $PII_DENYLIST"
+    echo "     Generic org-tell checks above still ran. Name, family, partner and"
+    echo "     private-path checks did NOT. This is expected in public CI."
+  else
+    echo "FAIL [name-based checks]: no denylist at $PII_DENYLIST"
+    echo "     Locally this file must exist. Without it the name, family, partner"
+    echo "     and private-path checks are silently absent, which is exactly the"
+    echo "     false green this rewrite removes."
+    echo "     Fix: ensure ~/.claude/private -> claude-config/private is linked,"
+    echo "     or set PII_DENYLIST to the file."
+    FAIL=1
+  fi
+fi
 
-# NBG-internal project names (case-insensitive but anchored)
-check "Internal projects" "Διπλή κάρτα|\bdual[- ]card\b|IRIS[[:space:]]+pilot|ECB[[:space:]]+Digital[[:space:]]+Euro[[:space:]]+CfEI"
-
-# External partners discussed in NBG-internal context
-check "Partner names" "\bWorldline\b|\bHelvia\b|\bWealthyhood\b|\bFeedzai\b|\bMellon\b|\b11FS\b|\bNCR\b"
-
-# Tax authority refs
-check "Tax authority" "ΑΑΔΕ|ΑΦΜ|ΑΔΤ|ΑΜΚΑ"
-
-# Personal source paths (specific to user's machine)
-check "User-specific paths" "/Users/plessas|/SourceCode/claude-config|claude-config/shared-memory"
-
-# Cleanup
-[ "$MODE" = "ci" ] && rm -f "$TRACKED_TMP"
-
-echo
 if [ $FAIL -eq 0 ]; then
   if [ "$MODE" = "doctor" ] && [ $INFO -ne 0 ]; then
     echo "=== GAUNTLET PASS (with INFO on gitignored files — local-only, not in git) ==="

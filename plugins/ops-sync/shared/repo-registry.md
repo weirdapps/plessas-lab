@@ -102,5 +102,5 @@ Legend: gha = GitHub Actions, py = Python, ts = TypeScript, sh = Shell
 
 ```
 ssh vps   # alias in ~/.ssh/config
-# Host: 167.233.42.38, User: plessas, Key: ed25519, ForwardAgent: yes
+# Host: see the `vps` alias in ~/.ssh/config, User: <your-user>, Key: ed25519, ForwardAgent: yes
 ```
