@@ -38,7 +38,7 @@
       "per_thread_cooldown_minutes": 15,
       "dry_run": true,
       "service_config": {
-        "db_path": "~/SourceCode/whatsapp-mcp/whatsapp-bridge/store/messages.db",
+        "db_path": "~/SourceCode/<whatsapp-bridge-repo>/whatsapp-bridge/store/messages.db",
         "api_url": "http://localhost:8080"
       }
     },

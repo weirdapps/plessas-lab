@@ -324,7 +324,7 @@ class TeamsAdapter(ServiceAdapter):
 # WhatsAppAdapter
 # ---------------------------------------------------------------------------
 
-_WHATSAPP_DEFAULT_DB = "~/SourceCode/whatsapp-mcp/whatsapp-bridge/store/messages.db"
+_WHATSAPP_DEFAULT_DB = "~/SourceCode/<whatsapp-bridge-repo>/whatsapp-bridge/store/messages.db"
 _WHATSAPP_DEFAULT_API = "http://localhost:8080"
 
 

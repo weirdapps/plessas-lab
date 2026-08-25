@@ -85,7 +85,7 @@ Typical entry points once a plugin is enabled:
 /nano-banana create a hero image for a fintech landing page
 /create-nbg-infographic quarterly card revenue mix
 /youtube channel @veritasium
-/comm-report month --recipient theofilidi
+/comm-report month --recipient <surname>
 /style-rebuild
 /ops-status --live
 /ops-sync --scope all

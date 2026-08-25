@@ -80,6 +80,13 @@ scan_doctor() {
     --exclude-dir=.venv \
     --exclude-dir=venv \
     --exclude-dir=.remember \
+    --exclude-dir=data \
+    --exclude-dir=attachments \
+    --exclude-dir=backups \
+    --exclude-dir=archive \
+    --exclude-dir=.next \
+    --exclude-dir=dist \
+    --exclude-dir=coverage \
     --exclude-dir=installers/deps \
     --exclude=pii-gauntlet.sh \
     --exclude=LICENSE \
