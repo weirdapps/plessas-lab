@@ -15,5 +15,11 @@
     "@types/node": "^26.0.0",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "protobufjs": ">=8.6.0",
+    "@protobufjs/utf8": ">=1.1.1",
+    "ws": ">=8.19.1",
+    "brace-expansion": ">=2.0.3"
   }
 }

@@ -41,7 +41,11 @@ htmlcov/
 *.old
 
 # Package locks (auto-generated, not needed in marketplace)
-**/package-lock.json
+# package-lock.json is COMMITTED, deliberately. It was ignored, so `npm ci`
+# was impossible and CI fell back to `npm install`: every run, every
+# colleague install and every deploy resolved a different tree, and the
+# tree that was tested was never the tree that shipped. That is how a
+# 9.8-severity transitive RCE sat in the resolved graph unnoticed.
 
 # Credential files - NEVER commit
 skill-key/

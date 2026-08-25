@@ -29,10 +29,13 @@ jobs:
           # package.json and with node_version in deps-refresh.yml.
           node-version: '22'
 
-      # package-lock.json is gitignored across this repo, so `npm ci` cannot be
+      # Lockfiles are committed now, so `npm ci` installs exactly the tree that
+      # was tested. It used to be `npm install` against a gitignored lock, which
+      # meant every run resolved something slightly different and the tree that
+      # shipped was never the tree CI checked.
       # used here or in scripts/typecheck.sh.
       - name: Install root dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Typecheck every plugin package
         run: npm run typecheck -- --install
