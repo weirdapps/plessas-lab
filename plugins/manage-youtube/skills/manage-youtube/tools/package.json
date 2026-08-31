@@ -9,7 +9,7 @@
   "dependencies": {
     "youtubei.js": "^18.0.0",
     "youtube-sr": "^4.3.11",
-    "youtube-caption-extractor": "^1.9.1"
+    "youtube-caption-extractor": "^1.10.2"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
