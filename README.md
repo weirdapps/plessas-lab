@@ -153,7 +153,7 @@ mypy .
 
 `pyproject.toml` pins Python 3.11, a ruff rulepack of E, W, F, I, B, C4, UP, and runs pytest with `--cov` so SonarCloud always gets a fresh `coverage.xml`. `package.json` requires Node 20+.
 
-Each plugin keeps its own `package.json`, `tsconfig.json` and `node_modules` instead of sharing a workspace, so `scripts/typecheck.sh` walks them explicitly. Its package list must stay in sync with the npm entries in `.github/dependabot.yml`. Lockfiles are gitignored repo-wide, which is why every install path uses `npm install` rather than `npm ci`.
+Each plugin keeps its own `package.json`, `tsconfig.json` and `node_modules` instead of sharing a workspace, so `scripts/typecheck.sh` walks them explicitly. Its package list must stay in sync with the npm entries in `.github/dependabot.yml`. Lockfiles are committed repo-wide, which is why every install path uses `npm ci` rather than `npm install`.
 
 The packages build with TypeScript 7, the Go-native compiler. Two of the TypeScript 6/7 defaults matter when editing a `tsconfig.json` here: `types` no longer defaults to every installed `@types` package, so each config lists `"types": ["node"]` explicitly, and `strict` is on unless disabled. Removing those `types` entries reintroduces several hundred "Cannot find name 'process'" errors.
 

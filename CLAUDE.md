@@ -82,8 +82,8 @@ Eight GitHub Actions workflows (`.github/workflows/`):
 - TypeScript 7 (the Go-native compiler) across all packages. Two TS 6/7 rules bite here: `types`
   no longer defaults to every `@types` package, so each `tsconfig.json` sets `"types": ["node"]`
   explicitly; and `strict` is on by default. Do not remove those `types` entries.
-- `package-lock.json` is gitignored repo-wide, so CI and `scripts/typecheck.sh` use
-  `npm install`, never `npm ci`.
+- `package-lock.json` is committed repo-wide, so CI and `scripts/typecheck.sh` use
+  `npm ci`, never `npm install`.
 - `manage-gmail` and `manage-youtube/.../playlist-tools` pin a single `google-auth-library`
   through an `overrides` block. `OAuth2Client` carries private fields, so two copies in one tree
   are structurally incompatible and every `google.gmail({ auth })` call stops typechecking.

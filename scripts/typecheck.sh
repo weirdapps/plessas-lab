@@ -27,8 +27,9 @@ for pkg in "${PACKAGES[@]}"; do
   (
     cd "$REPO_ROOT/$pkg"
     if [ "$INSTALL" -eq 1 ]; then
-      # Lockfiles are gitignored in this repo, so `npm ci` is not an option.
-      npm install --no-audit --no-fund --loglevel=error
+      # Lockfiles are committed in this repo, so `npm ci` installs exactly what
+      # is pinned instead of re-resolving the graph.
+      npm ci --no-audit --no-fund --loglevel=error
     fi
     npx --no-install tsc --noEmit
   ) || failed+=("$pkg")
