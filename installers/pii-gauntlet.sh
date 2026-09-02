@@ -129,9 +129,22 @@ apply_exclusion() {
     printf '%s' "$hits"
     return
   fi
+  # The exclusion is PATH-shaped, so anchor it to the "path:" prefix. Testing it
+  # against the whole line is what let path-shaped alternatives (an HTML tag,
+  # the bare word "template") suppress a live hit in the CONTENT: any line
+  # containing `<td>` was excluded from the employer-name and mail-domain
+  # checks.
+  #
+  # The only content the exclusion may drop is this fixed, narrow list of
+  # invented placeholders. They are the correct thing to write in an example
+  # and must not trip the check that exists to catch the real thing.
+  #
   # Copyright attribution names the author on purpose and is required by the
   # licence. Flagging it is noise, and noise is how a real hit gets ignored.
-  printf '%s\n' "$hits" | grep -vE "$exclude" | grep -viE '\(c\)[[:space:]]*[0-9]{4}|copyright' || true
+  printf '%s\n' "$hits" \
+    | grep -vE "^[^:]*($exclude)" \
+    | grep -vE 'contoso|firstname\.lastname|your\.email|recipient\.name' \
+    | grep -viE '\(c\)[[:space:]]*[0-9]{4}|copyright' || true
 }
 
 check() {
@@ -212,7 +225,10 @@ check() {
 # Doc placeholders. Extend this when a new invented example host trips the check:
 # being asked once "is this a real tenant?" is the check doing its job, and is a
 # far better failure mode than the silence it replaces.
-PLACEHOLDER='contoso|example|sample|template|your[-_.]?tenant|your-tenant|<[^>]+>|firstname\.lastname|your\.email|recipient\.name|user@|name@|(test|overridden|envvar|dummy|placeholder|foo|bar|[a-z])(-my)?\.sharepoint'
+# The single-letter fixture hosts are listed explicitly. A bare `[a-z]` here
+# matched one letter before `.sharepoint`, so it excluded EVERY real tenant
+# hostname and the SharePoint check could never fire.
+PLACEHOLDER='contoso|example|sample|template|your[-_.]?tenant|your-tenant|<[^>]+>|firstname\.lastname|your\.email|recipient\.name|user@|name@|(test|overridden|envvar|dummy|placeholder|foo|bar|a|b|x|y|z)(-my)?\.sharepoint'
 
 # Some repos name the employer on purpose: a marketplace written for colleagues
 # says so in its README by design. Those opt out with a repo-root marker rather
