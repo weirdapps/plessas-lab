@@ -26,11 +26,26 @@ updates:
       - dependencies
       - npm
     groups:
+      # @vitest/coverage-v8 declares an EXACT peer on vitest, so the two can
+      # only ever move together. This group is listed first and carries no
+      # update-types, because a group without one covers all semver versions
+      # and a dependency lands in the first group it matches. Filtered to
+      # minor+patch by development-dependencies below, a major like 4 -> 5
+      # fell out of the group entirely and Dependabot opened one PR per
+      # package; each of those alone is an unresolvable peer tree and
+      # `npm ci` dies with ERESOLVE before a single test runs.
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
       development-dependencies:
         dependency-type: development
         update-types:
           - minor
           - patch
+        exclude-patterns:
+          - "vitest"
+          - "@vitest/*"
       production-dependencies:
         dependency-type: production
         update-types:
