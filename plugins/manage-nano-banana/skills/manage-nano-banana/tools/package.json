@@ -9,7 +9,7 @@
     "generate-diagram": "tsx generate-diagram.ts"
   },
   "dependencies": {
-    "@google/genai": "^2.21.0"
+    "@google/genai": "^2.22.0"
   },
   "devDependencies": {
     "@types/node": "^26.5.0",
