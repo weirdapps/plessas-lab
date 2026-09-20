@@ -26,7 +26,8 @@
     "@types/node": "^26.5.1",
     "typescript": "^7.0.2"
   },
+  "//engines": "22.12.0, not 22.0.0: commander 15 is a runtime dependency (src/gmail-operations.ts imports Command) and declares engines.node >=22.12.0. npm only warns on a bad engines field, so a user on 22.0-22.11 would install cleanly and fail in the CLI.",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   }
 }
