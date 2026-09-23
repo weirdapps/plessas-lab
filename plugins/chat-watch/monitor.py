@@ -824,8 +824,11 @@ def invoke_claude(prompt: str, timeout: int = CLAUDE_TIMEOUT_SECONDS) -> str:
     """Invoke claude with model fallback. Raise ClaudeCliError on hard failure."""
     envelope = _claude_once(prompt, CLAUDE_MODEL, os.environ.get("CLOUD_ML_REGION"), timeout)
     if envelope.get("stop_reason") == "refusal" or envelope.get("is_error"):
-        fb_model = os.environ.get("VERTEX_MODEL_FALLBACK", "claude-opus-5[1m]")
-        fb_region = os.environ.get("VERTEX_REGION_FALLBACK", "eu")
+        # Defaults are the Opus 4.6 escape-hatch tier (owner decision 2026-09-23), and
+        # the REGION default moves with the model on purpose: 4.6 is a <=4.6 model, so
+        # it belongs in europe-west1 and an "eu" default would 429 every retry.
+        fb_model = os.environ.get("VERTEX_MODEL_FALLBACK", "claude-opus-4-6[1m]")
+        fb_region = os.environ.get("VERTEX_REGION_FALLBACK", "europe-west1")
         log_event(
             "llm_downgrade",
             reason="policy_refusal" if envelope.get("stop_reason") == "refusal" else "api_error",

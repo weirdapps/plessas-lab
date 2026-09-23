@@ -463,12 +463,18 @@ def test_invoke_claude_downgrades_on_api_error(tmp_path, monkeypatch):
     assert "sentinel-fallback-model" in mock_run.call_args_list[1][0][0]
 
 
-def test_invoke_claude_fallback_defaults_to_opus_5_eu(tmp_path, monkeypatch):
-    """With no VERTEX_MODEL_FALLBACK override the retry lands on Opus 5 @ eu.
+def test_invoke_claude_fallback_defaults_to_opus_4_6_europe_west1(tmp_path, monkeypatch):
+    """With no VERTEX_MODEL_FALLBACK override the retry lands on Opus 4.6 @ europe-west1.
 
-    Owner decision, 2026-08-03: the fallback tier is the same model class as the
-    primary, so it absorbs transient errors but is no longer an escape hatch to
-    an older model.
+    Owner decision, 2026-09-23: the escape hatch is restored. The fallback is a
+    genuinely older model class again, because 4.6 is the one model verified not to
+    raise the false "anthropic policy" refusal, and because with the primary on Opus
+    5.5 an Opus 5 fallback was the more expensive model for no added diversity.
+
+    The REGION is asserted alongside the model deliberately. Region is a function of
+    model version here (>=4.7 to eu, <=4.6 to europe-west1) and a mismatched pair does
+    not refuse, it 429s. A default that moved the model without the region would leave
+    every retry dead, so this test fails if the two are ever separated.
     """
     monkeypatch.setattr(monitor, "LOG_FILE", tmp_path / "log.jsonl")
     monkeypatch.delenv("VERTEX_MODEL_FALLBACK", raising=False)
@@ -478,8 +484,8 @@ def test_invoke_claude_fallback_defaults_to_opus_5_eu(tmp_path, monkeypatch):
     with patch("subprocess.run", side_effect=[refusal, ok]) as mock_run:
         assert monitor.invoke_claude("test prompt") == "REPLY_OK"
     second = mock_run.call_args_list[1]
-    assert "claude-opus-5[1m]" in second[0][0]
-    assert second[1]["env"]["CLOUD_ML_REGION"] == "eu"
+    assert "claude-opus-4-6[1m]" in second[0][0]
+    assert second[1]["env"]["CLOUD_ML_REGION"] == "europe-west1"
 
 
 # ---------------------------------------------------------------------------
