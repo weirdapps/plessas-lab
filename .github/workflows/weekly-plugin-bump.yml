@@ -1,0 +1,108 @@
+name: Weekly Plugin Bump
+
+# version-bumps.yml exempts Dependabot, whose updates under plugins/*/ cannot
+# raise a version themselves. Left alone, those changes would never reach an
+# installed copy (Claude Code re-copies a plugin only when its version changes).
+# This collects them once a week: scripts/bump_changed_plugins.py patch-bumps
+# every plugin with a file changed since its version last changed, in
+# plugin.json and marketplace.json, plus the marketplace version, and this opens
+# (or refreshes) ONE pull request with the result.
+#
+# The PR is opened with GITHUB_TOKEN, and GitHub starts no workflows from events
+# that token causes, so no pull_request checks run on it by themselves. The
+# gates that matter for a version bump run here before anything is pushed, and
+# the PR body says how to run the full set. Nothing auto-merges it:
+# dependabot-auto-merge.yml acts only on dependabot[bot] PRs.
+#
+# Needs the repo setting "Allow GitHub Actions to create and approve pull
+# requests" (Settings > Actions > General). Without it the branch is still
+# pushed and the job fails at `gh pr create`.
+
+"on":
+  schedule:
+    # Fridays, after the week's Monday Dependabot runs have merged.
+    - cron: "37 5 * * 5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-plugin-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: open the weekly plugin bump PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BRANCH: automation/weekly-plugin-bump
+      BASE_BRANCH: ${{ github.event.repository.default_branch }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # A plugin's last version change can be anywhere in history.
+          fetch-depth: 0
+
+      - name: Bump changed plugins
+        id: bump
+        run: |
+          set -euo pipefail
+          python3 scripts/bump_changed_plugins.py | tee "$RUNNER_TEMP/plan.txt"
+          if git diff --quiet; then
+            echo "changed=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit on the bump branch
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git commit -qam "chore(release): weekly patch bump of changed plugins"
+
+      # What the PR's own Version Bumps and Validate Plugins runs would check.
+      - name: Gate the bump
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          python3 scripts/check_version_bumps.py "origin/$BASE_BRANCH" HEAD
+          pip install pyyaml
+          python3 scripts/validate_consistency.py
+
+      - name: Open or refresh the PR
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          # The bot owns this branch: it is rebuilt from the default branch every
+          # week, so an unmerged PR from last week is refreshed, never doubled.
+          git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
+          {
+            echo "Weekly patch release of every plugin with a file changed since its version"
+            echo "last changed, mostly Dependabot updates that version-bumps.yml exempts."
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/plan.txt"
+            echo '```'
+            echo
+            echo "Opened with GITHUB_TOKEN, so GitHub started no checks on this PR. The run"
+            echo "that opened it passed check_version_bumps.py and validate_consistency.py."
+            echo "Close and reopen the PR to run the full check set before merging."
+          } >"$RUNNER_TEMP/body.md"
+          pr=$(gh pr list --head "$BRANCH" --base "$BASE_BRANCH" --state open \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --body-file "$RUNNER_TEMP/body.md"
+            echo "Refreshed PR #$pr."
+          else
+            gh pr create --base "$BASE_BRANCH" --head "$BRANCH" \
+              --title "chore(release): weekly patch bump of changed plugins" \
+              --body-file "$RUNNER_TEMP/body.md"
+          fi

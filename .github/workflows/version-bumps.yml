@@ -21,6 +21,16 @@ permissions:
 jobs:
   version-bumps:
     name: changed plugins raise their version
+    # Dependabot is exempt: its updates under plugins/*/ cannot raise a version,
+    # so this failed every one of them. weekly-plugin-bump.yml ships them in one
+    # patch release instead. Exempt are its PRs, and a push whose only commit it
+    # authored (a squash-merged Dependabot PR); any other push is still checked.
+    if: >-
+      (github.event_name == 'pull_request'
+        && github.event.pull_request.user.login != 'dependabot[bot]')
+      || (github.event_name == 'push'
+        && !(github.event.head_commit.author.name == 'dependabot[bot]'
+             && !github.event.commits[1]))
     runs-on: ubuntu-latest
     env:
       # pull_request: the base branch tip. GITHUB_SHA is then the merge commit,
