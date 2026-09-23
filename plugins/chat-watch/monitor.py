@@ -772,7 +772,7 @@ def build_prompt(
 # ---------------------------------------------------------------------------
 
 CLAUDE_TIMEOUT_SECONDS = 240
-CLAUDE_MODEL = os.environ.get("VERTEX_MODEL_HEAVY", "claude-opus-5[1m]")
+CLAUDE_MODEL = os.environ.get("VERTEX_MODEL_HEAVY", "claude-opus-5-5[1m]")
 MAX_LLM_ATTEMPTS = 3
 
 
