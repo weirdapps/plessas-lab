@@ -1,0 +1,37 @@
+name: Version Bumps
+
+# Claude Code runs an installed plugin from a copy keyed on its plugin.json
+# `version`, and `/plugin update` re-copies only when that version changes. So
+# a change under plugins/<name>/ that leaves the version alone never reaches
+# anyone who has the plugin installed. No plugin here changed version between
+# shipping and 1.2.1, so installed copies silently missed dependency updates,
+# an ops-sync fix and the chat-watch model defaults while every other check was
+# green. This fails that change. The logic is in scripts/check_version_bumps.py
+# and its tests in tests/test_check_version_bumps.py.
+
+"on":
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  version-bumps:
+    name: changed plugins raise their version
+    runs-on: ubuntu-latest
+    env:
+      # pull_request: the base branch tip. GITHUB_SHA is then the merge commit,
+      # so BASE..HEAD is exactly what the PR would land. push: the previous tip.
+      BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      # Only the two trees are compared, so the history between them is not needed.
+      - name: Fetch the base commit
+        run: git fetch --no-tags --depth=1 origin "$BASE"
+
+      - name: Check changed plugins raised their version
+        run: python3 scripts/check_version_bumps.py "$BASE" HEAD

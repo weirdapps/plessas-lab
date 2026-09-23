@@ -5,16 +5,18 @@ All notable changes to plessas-lab marketplace will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.1] — 2026-09-23
 
 ### Added
 
+- `version-bumps.yml` with `scripts/check_version_bumps.py`: a push or PR that changes files under `plugins/<name>/` without raising that plugin's version now fails. Claude Code re-copies an installed plugin only when its version changes, and no plugin here had changed version since it shipped, so none of the plugin changes below had reached an installed copy.
 - `checks.yml` workflow: a blocking gate that typechecks all four TypeScript packages, runs the vitest suite, and runs pytest on every push and PR. No existing workflow compiled the TypeScript, and `sonarcloud.yml` runs pytest behind `continue-on-error` + `|| true`, so type errors and failing tests could land on master unnoticed.
 - `npm run typecheck` (`scripts/typecheck.sh`) to run the same check locally.
 - Explicit `google-auth-library` dependency plus an `overrides` pin in `manage-gmail` and `manage-youtube`'s `playlist-tools`. Both imported it without declaring it.
 
 ### Changed
 
+- Plugin versions raised so installed copies receive everything merged since those versions were set: `manage-gmail`, `manage-nano-banana`, `manage-youtube` and `ops-sync` 1.0.0 → 1.0.1, `chat-watch` 0.1.0 → 0.1.1, marketplace 1.2.0 → 1.2.1. `mail-pro` and `manage-apple-notes` are unchanged and stay at 1.0.0.
 - TypeScript 6.0.3 → 7.0.2 (the Go-native compiler) in the root package and all four plugin packages.
 - Every `tsconfig.json` now sets `"types": ["node"]`. TypeScript 6 changed the default of `types` from "every installed `@types` package" to `[]`, and the packages had been relying on that implicit inclusion.
 - `manage-youtube`'s `tools/tsconfig.json` no longer compiles the nested `playlist-tools` package, which is a separate npm package with its own dependency tree and is spawned as a subprocess rather than imported.

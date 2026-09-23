@@ -21,12 +21,12 @@ Companion to the sibling [`plessas-marketplace`](https://github.com/weirdapps/pl
 | Plugin | Version | Slash commands | What it does |
 |---|---|---|---|
 | [`manage-apple-notes`](./plugins/manage-apple-notes/) | 1.0.0 | `/apple-notes` | CRUD for Apple Notes via `osascript`. macOS only; the scripts exit cleanly on other platforms. Ships a `manage-apple-notes` skill. |
-| [`manage-gmail`](./plugins/manage-gmail/) | 1.0.0 | `/gmail` | Gmail API (list, search, read, send, reply, forward, draft, profile). Node CLI under `skills/manage-gmail/scripts/`. OAuth 2.0 Desktop client required. |
-| [`manage-nano-banana`](./plugins/manage-nano-banana/) | 1.0.0 | `/nano-banana`, `/create-nbg-infographic` | Image generation and editing via Google Gemini image models (`gemini-2.5-flash-image`, `gemini-3-pro-image-preview`). Works over Vertex AI (ADC) or a `GEMINI_API_KEY`. |
-| [`manage-youtube`](./plugins/manage-youtube/) | 1.0.0 | `/youtube` | TypeScript CLI over YouTube: channel info, channel search, channel videos, transcripts, favorites, and playlist auth / manage / sync. Discovery works with no auth; playlist management needs YouTube Data API v3 OAuth. |
-| [`chat-watch`](./plugins/chat-watch/) | 0.1.0 (experimental) | none (Python worker) | Polls Microsoft Teams chats and posts `[Claude]`-prefixed replies through an LLM gate. Long-lived process (launchd / systemd). Requires `teams-cli` authenticated. |
+| [`manage-gmail`](./plugins/manage-gmail/) | 1.0.1 | `/gmail` | Gmail API (list, search, read, send, reply, forward, draft, profile). Node CLI under `skills/manage-gmail/scripts/`. OAuth 2.0 Desktop client required. |
+| [`manage-nano-banana`](./plugins/manage-nano-banana/) | 1.0.1 | `/nano-banana`, `/create-nbg-infographic` | Image generation and editing via Google Gemini image models (`gemini-2.5-flash-image`, `gemini-3-pro-image-preview`). Works over Vertex AI (ADC) or a `GEMINI_API_KEY`. |
+| [`manage-youtube`](./plugins/manage-youtube/) | 1.0.1 | `/youtube` | TypeScript CLI over YouTube: channel info, channel search, channel videos, transcripts, favorites, and playlist auth / manage / sync. Discovery works with no auth; playlist management needs YouTube Data API v3 OAuth. |
+| [`chat-watch`](./plugins/chat-watch/) | 0.1.1 (experimental) | none (Python worker) | Polls Microsoft Teams chats and posts `[Claude]`-prefixed replies through an LLM gate. Long-lived process (launchd / systemd). Requires `teams-cli` authenticated. |
 | [`mail-pro`](./plugins/mail-pro/) | 1.0.0 | `/comm-report`, `/style-rebuild` | Corpus-driven companion to `mail`: relationship analytics and style-guide rebuild against a private `second-brain` SQLite store. Maintainer-only. |
-| [`ops-sync`](./plugins/ops-sync/) | 1.0.0 | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Fleet health engine. Six agents (`repo-scanner`, `vps-auditor`, `github-checker`, `mac-auditor`, `sync-engine`, `fixer`) scan local repos, Hetzner VPS systemd timers, GitHub Actions, Mac LaunchAgents, and Mac / VPS HEAD alignment. Optional remediation. |
+| [`ops-sync`](./plugins/ops-sync/) | 1.0.1 | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Fleet health engine. Six agents (`repo-scanner`, `vps-auditor`, `github-checker`, `mac-auditor`, `sync-engine`, `fixer`) scan local repos, Hetzner VPS systemd timers, GitHub Actions, Mac LaunchAgents, and Mac / VPS HEAD alignment. Optional remediation. |
 
 ## Architecture
 
@@ -167,12 +167,13 @@ Adding a new plugin:
 
 ## Continuous integration
 
-Eight workflows under `.github/workflows/`:
+Workflows under `.github/workflows/`:
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | `checks.yml` | push / PR on master | Blocking test gate. `node` job typechecks all four TypeScript packages with `tsc --noEmit` and runs vitest; `python` job runs pytest. Nothing else in CI compiles the TypeScript, and `sonarcloud.yml` runs pytest non-blocking so it can still upload coverage. |
 | `validate-plugins.yml` | push / PR on master | `marketplace.json` and every `plugin.json` are valid JSON with the required fields; per-plugin README present; every command has YAML frontmatter; also runs `scripts/validate_consistency.py`. |
+| `version-bumps.yml` | push / PR on master | Fails when files under `plugins/<name>/` change without that plugin's `version` rising. Claude Code re-copies an installed plugin only when its version changes, so an unbumped change never reaches an installed copy. Logic in `scripts/check_version_bumps.py`. |
 | `codeql.yml` | push / PR / weekly cron | GitHub CodeQL for JavaScript and TypeScript. |
 | `pii-check.yml` | push / PR | Runs `installers/pii-gauntlet.sh --mode=ci` to scan git-tracked files for personal data. |
 | `rename-guard.yml` | push / PR | Fails if a legacy pre-rename project name (from the 2026-05-09 renames) leaks back into tracked files. |
