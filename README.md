@@ -26,7 +26,7 @@ Companion to the sibling [`plessas-marketplace`](https://github.com/weirdapps/pl
 | [`manage-youtube`](./plugins/manage-youtube/) | 1.0.1 | `/youtube` | TypeScript CLI over YouTube: channel info, channel search, channel videos, transcripts, favorites, and playlist auth / manage / sync. Discovery works with no auth; playlist management needs YouTube Data API v3 OAuth. |
 | [`chat-watch`](./plugins/chat-watch/) | 0.1.1 (experimental) | none (Python worker) | Polls Microsoft Teams chats and posts `[Claude]`-prefixed replies through an LLM gate. Long-lived process (launchd / systemd). Requires `teams-cli` authenticated. |
 | [`mail-pro`](./plugins/mail-pro/) | 1.0.0 | `/comm-report`, `/style-rebuild` | Corpus-driven companion to `mail`: relationship analytics and style-guide rebuild against a private `second-brain` SQLite store. Maintainer-only. |
-| [`ops-sync`](./plugins/ops-sync/) | 1.0.1 | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Fleet health engine. Six agents (`repo-scanner`, `vps-auditor`, `github-checker`, `mac-auditor`, `sync-engine`, `fixer`) scan local repos, Hetzner VPS systemd timers, GitHub Actions, Mac LaunchAgents, and Mac / VPS HEAD alignment. Optional remediation. |
+| [`ops-sync`](./plugins/ops-sync/) | 1.0.2 | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Fleet health engine. Six agents (`repo-scanner`, `vps-auditor`, `github-checker`, `mac-auditor`, `sync-engine`, `fixer`) scan local repos, Hetzner VPS systemd timers, GitHub Actions, Mac LaunchAgents, and Mac / VPS HEAD alignment. Optional remediation. |
 
 ## Architecture
 

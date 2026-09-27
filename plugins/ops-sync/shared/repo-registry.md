@@ -6,7 +6,6 @@ All repos live flat under `~/SourceCode/`. VPS mirror at same path via `ssh vps`
 
 | Repo | Lang | Tests | Lint | CI | Branch | VPS |
 |------|------|-------|------|----|--------|-----|
-| atm-recon | py | — | — | — | master | no |
 | claude-config | sh/py | pytest | shellcheck | gha | master | yes |
 | etoro-portfolio | py | pytest | ruff | gha | master | no |
 | etoro-tui | py | pytest | ruff | gha | master | no |
@@ -22,8 +21,6 @@ All repos live flat under `~/SourceCode/`. VPS mirror at same path via `ssh vps`
 | plessas-lab | ts/py | vitest | ruff | gha | master | no |
 | plessas-marketplace | py | — | ruff | gha | master | no |
 | plessas-trading-stack | py | pytest | ruff | gha | master | no |
-| remotion-private | ts | — | eslint | gha | master | no |
-| remotion-studio | ts | vitest | eslint | gha | master | no |
 | resume | ts | — | eslint | gha | master | no |
 | sch-mail | py | — | — | — | master | no |
 | second-brain | py | pytest | ruff | gha | master | yes |
@@ -42,6 +39,7 @@ copy of it drifted to nine wrong rows, every one understating public exposure.
 Read it live instead: `gh repo list weirdapps --json name,visibility`.
 
 > `communications-marketplace` was archived + deprecated on 2026-05-25 (superseded by `plessas-marketplace`) and removed from this registry on 2026-07-20.
+> `atm-recon` (deleted 2026-09-24), `remotion-private` and `remotion-studio` (deleted 2026-09-27) were removed from this registry on 2026-09-27.
 
 ## VPS Systemd Units
 
