@@ -141,6 +141,25 @@ export function validatePlaylistItemId(id: string, context?: string): void {
 // ============================================================================
 
 /**
+ * The v= query parameter of a youtube.com URL (any subdomain), or null.
+ * Linear in the input: no backtracking regex is applied to the whole string.
+ */
+function videoIdFromQuery(input: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(input) ? input : `https://${input}`);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.toLowerCase();
+  if (host !== 'youtube.com' && !host.endsWith('.youtube.com')) {
+    return null;
+  }
+  const id = url.searchParams.get('v');
+  return id && isValidVideoId(id) ? id : null;
+}
+
+/**
  * Extract and validate video ID from URL or direct ID
  * Returns the validated video ID or throws if invalid
  */
@@ -164,7 +183,6 @@ export function extractAndValidateVideoId(input: string): string {
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
     /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
     /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
   ];
 
   for (const pattern of patterns) {
@@ -172,6 +190,15 @@ export function extractAndValidateVideoId(input: string): string {
     if (match && match[1]) {
       return match[1];
     }
+  }
+
+  // Any other youtube.com URL that carries the ID in its v= query parameter
+  // (watch?list=...&v=ID, music. and m. hosts). Parsed with URL: the regex this
+  // replaces, /youtube\.com\/.*[?&]v=(...)/, backtracks polynomially on long
+  // inputs (CodeQL js/polynomial-redos).
+  const fromQuery = videoIdFromQuery(trimmed);
+  if (fromQuery) {
+    return fromQuery;
   }
 
   // If we get here, the input is neither a valid ID nor a recognizable URL
