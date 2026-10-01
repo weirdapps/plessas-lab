@@ -198,6 +198,35 @@ def test_wa_send_message_posts_to_api(wa_adapter):
         assert body["message"] == "[Claude] test reply"
 
 
+def test_wa_send_message_sends_bridge_token(wa_adapter, wa_db):
+    """The bridge answers 401 without X-Bridge-Token; it is read from api_token next to messages.db."""
+    (wa_db.parent / "api_token").write_text("tok123\n")
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = json.dumps({"success": True, "message": "sent"}).encode()
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    with patch("urllib.request.urlopen", return_value=mock_resp) as mock_url:
+        wa_adapter.send_message("120363025526@g.us", "hi")
+        req = mock_url.call_args[0][0]
+        assert req.get_header("X-bridge-token") == "tok123"
+
+
+def test_wa_token_path_override(wa_db, tmp_path):
+    """token_path in service_config replaces the default location."""
+    custom = tmp_path / "elsewhere" / "token"
+    custom.parent.mkdir()
+    custom.write_text("custom-token")
+    adapter = monitor.WhatsAppAdapter({"db_path": str(wa_db), "token_path": str(custom)})
+    assert adapter._bridge_token() == "custom-token"
+
+
+def test_wa_missing_token_is_empty_not_an_error(wa_db):
+    """Before the bridge's first start there is no token; the bridge, not the adapter, refuses the call."""
+    adapter = monitor.WhatsAppAdapter({"db_path": str(wa_db)})
+    assert adapter._bridge_token() == ""
+
+
 def test_wa_send_message_raises_on_failure(wa_adapter):
     """send_message raises WhatsAppBridgeError when API returns success=false."""
     response = json.dumps({"success": False, "message": "not registered"}).encode()

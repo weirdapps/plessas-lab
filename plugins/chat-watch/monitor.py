@@ -336,6 +336,11 @@ class WhatsAppAdapter(ServiceAdapter):
         cfg = service_config or {}
         self._db_path = Path(cfg.get("db_path", _WHATSAPP_DEFAULT_DB)).expanduser()
         self._api_url = cfg.get("api_url", _WHATSAPP_DEFAULT_API).rstrip("/")
+        # The bridge refuses /api/ calls without its token, which it writes next
+        # to messages.db on first start. token_path overrides that location.
+        self._token_path = Path(
+            cfg.get("token_path") or self._db_path.parent / "api_token"
+        ).expanduser()
         self._conn: sqlite3.Connection | None = None
 
     def _get_conn(self) -> sqlite3.Connection:
@@ -400,12 +405,19 @@ class WhatsAppAdapter(ServiceAdapter):
             service="whatsapp",
         )
 
+    def _bridge_token(self) -> str:
+        """Read per call, so a regenerated token is picked up without a restart."""
+        try:
+            return self._token_path.read_text().strip()
+        except OSError:
+            return ""
+
     def send_message(self, chat_id: str, text: str) -> None:
         data = json.dumps({"recipient": chat_id, "message": text}).encode()
         req = urllib.request.Request(
             f"{self._api_url}/api/send",
             data=data,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "X-Bridge-Token": self._bridge_token()},
         )
         try:
             with urllib.request.urlopen(req, timeout=15) as resp:
