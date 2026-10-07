@@ -62,12 +62,10 @@ Read it live instead: `gh repo list weirdapps --json name,visibility`.
 | sb-attachments | 02:00 daily | no |
 | sb-auth-watch | 06:35, 12:00, 18:00 | yes |
 | sb-calendar-sync | 06:33 daily | no |
-| sb-curate-docs | 05:07 daily | no |
 | sb-noon-catchup | 13:17 daily | no |
 | sb-outlook-sync | hourly 07:00–22:00 | yes |
 | sb-teams-sync | hourly 07:30–22:30 | yes |
 | sb-daily-sync | 07:00 daily | yes |
-| sb-reverse-ingest | 06:07 daily | no |
 | sb-health-check | 23:50 daily | no |
 | v3-report | 12:00 daily (renamed from committee) | yes |
 | backtest | Sun 20:00 | no |
