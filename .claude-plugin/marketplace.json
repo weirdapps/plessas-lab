@@ -108,7 +108,7 @@
       "name": "ops-sync",
       "source": "./plugins/ops-sync",
       "description": "Infrastructure health and sync engine — scans all repos (local Mac + VPS + GitHub) for git state, tests, lint, CI/CD, systemd timers, LaunchAgents, and token freshness. Parallel multi-agent architecture with fix capabilities.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "weirdapps"
       },
