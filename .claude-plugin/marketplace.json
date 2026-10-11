@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Skills for productivity, file management, and external services",
-    "version": "1.2.3",
+    "version": "1.2.4",
     "pluginRoot": "./plugins"
   },
   "plugins": [
@@ -28,7 +28,7 @@
       "name": "manage-gmail",
       "source": "./plugins/manage-gmail",
       "description": "Access and process Gmail messages using the Gmail API. Use when the user asks to read, search, list, send, reply to, or forward emails. Supports OAuth 2.0 authentication with stored credentials.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": {
         "name": "weirdapps"
       },
@@ -43,7 +43,7 @@
       "name": "manage-nano-banana",
       "source": "./plugins/manage-nano-banana",
       "description": "Generate and edit images, create diagrams, infographics, and visualizations using Google's Nano Banana API (Gemini Image Generation). Use when the user asks to create images, edit existing images, generate architecture diagrams, flowcharts, ERDs, timelines, or any visual artifacts.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "weirdapps"
       },
@@ -61,7 +61,7 @@
       "name": "manage-youtube",
       "source": "./plugins/manage-youtube",
       "description": "Search, discover, consume, and manage YouTube content using TypeScript CLI tools. Use when the user asks to search YouTube, get channel information, retrieve videos from a channel, get video transcripts, analyze YouTube content, manage favorite channels, organize saved videos with topics and thematics, or manage YouTube playlists (list, create, update, delete, add/remove videos). Works with channel handles (@username), URLs, or channel IDs. Includes both third-party API tools (no auth required) and official YouTube API tools (OAuth required for playlist management).",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "author": {
         "name": "weirdapps"
       },
