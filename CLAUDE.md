@@ -1,7 +1,7 @@
 # plessas-lab
 
 Experimental Claude Code plugin marketplace. Seven plugins covering Apple Notes, Gmail, image
-generation, YouTube, Teams monitoring, email analytics, and infrastructure ops. GitHub:
+generation, YouTube, Teams monitoring (retired), email analytics, and infrastructure ops. GitHub:
 `weirdapps/plessas-lab`. Companion to `plessas-marketplace` (production plugins) — lab plugins
 require external API setup or are experimental in scope.
 
@@ -13,7 +13,7 @@ require external API setup or are experimental in scope.
 | `manage-gmail` | `/gmail` | Gmail API read/search/send/reply/forward. Requires OAuth 2.0 setup (`credentials.json` + `token.json` kept outside the repo). |
 | `manage-nano-banana` | `/nano-banana`, `/create-nbg-infographic` | Image generation and editing via Google's Gemini image API. Requires a Gemini API key. |
 | `manage-youtube` | `/youtube` | YouTube search, channel info, video transcripts, playlist management. Ships TypeScript CLI tools; OAuth required for write operations. |
-| `chat-watch` | _(none — Python CLI)_ | Long-running Teams chat monitor with LLM gate. No slash command; run `monitor.py` directly or via launchd/systemd. Config lives at `~/.claude/chat-watch/` (outside the repo). |
+| `chat-watch` | _(none: Python CLI)_ | **Retired 2026-09-29: no longer deployed on any host; the code is kept for reference.** Long-running Teams chat monitor with LLM gate. No slash command; run `monitor.py` directly or via launchd/systemd. Config lives at `~/.claude/chat-watch/` (outside the repo). |
 | `mail-pro` | `/comm-report`, `/style-rebuild` | Email corpus analytics add-on requiring the `second-brain` private knowledge store. Companion to the `mail` plugin in `plessas-marketplace`. |
 | `ops-sync` | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Infrastructure health engine: scans Mac repos, VPS systemd timers, GitHub Actions, and token freshness. Parallel multi-agent architecture. Agents in `plugins/ops-sync/agents/`. |
 
@@ -56,7 +56,7 @@ tests/                         # Top-level: TypeScript tests (vitest, auth-flow)
 
 ## CI
 
-Eight GitHub Actions workflows (`.github/workflows/`):
+Eleven GitHub Actions workflows (`.github/workflows/`):
 
 | Workflow | Trigger | What it checks |
 |----------|---------|----------------|
@@ -68,12 +68,15 @@ Eight GitHub Actions workflows (`.github/workflows/`):
 | `codeql.yml` | push/PR | Security scanning |
 | `deps-refresh.yml` | scheduled | Automated dependency refresh (lab-specific — not in plessas-marketplace) |
 | `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merge minor/patch bumps |
+| `gitleaks.yml` | push/PR/weekly | Secret scan |
+| `version-bumps.yml` | push/PR to master | Fails a change under `plugins/<name>/` that does not bump its version |
+| `weekly-plugin-bump.yml` | weekly | Opens one PR patch-bumping plugins changed by Dependabot |
 
 ## Key Dependencies and Constraints
 
 - `manage-gmail` and `manage-youtube` require Google API credentials stored outside the repo.
 - `manage-nano-banana` requires a Gemini API key.
-- `chat-watch` requires `teams-cli` authenticated and per-chat config at `~/.claude/chat-watch/`.
+- `chat-watch` (retired) required `teams-cli` authenticated and per-chat config at `~/.claude/chat-watch/`.
 - `mail-pro` requires the private `second-brain` knowledge store; without it, use `mail` from
   `plessas-marketplace` instead.
 - `ops-sync` expects the full `~/SourceCode/` repo layout plus SSH access to the Hetzner VPS
@@ -100,6 +103,6 @@ Eight GitHub Actions workflows (`.github/workflows/`):
 
 - **`plessas-marketplace`** — production plugins (mail, chat, decks, meetings, excel, docs).
   `mail-pro` is a companion/add-on to `mail`; install both for full functionality.
-- **`second-brain`** (private) — MCP knowledge store required by `mail-pro`.
+- **`plessas-second-brain`** (public code; needs your own populated store): MCP knowledge store required by `mail-pro`.
 - **`teams-access`** / **`outlook-access`** — CLI sources for the bridge tools consumed by
   `chat-watch` and any Teams-adjacent commands.
