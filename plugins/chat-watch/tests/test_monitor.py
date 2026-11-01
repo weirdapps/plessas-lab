@@ -415,6 +415,8 @@ def test_invoke_claude_returns_result():
         assert "--model" in called_args
         assert "--print" in called_args
         assert "--output-format" in called_args and "json" in called_args
+        # Incoming chat text must not be able to drive Read or Bash.
+        assert called_args[called_args.index("--tools") + 1] == ""
 
 
 def test_invoke_claude_raises_on_timeout():

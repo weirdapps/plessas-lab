@@ -809,8 +809,20 @@ def _claude_once(prompt: str, model: str, region: str | None, timeout: int) -> d
     if region:
         env["CLOUD_ML_REGION"] = region
     try:
+        # --tools "": the prompt carries incoming chat text, which must not be able
+        # to drive Read or Bash (claude --print runs tools without asking).
         proc = subprocess.run(
-            ["claude", "--bare", "--model", model, "--print", "--output-format", "json"],
+            [
+                "claude",
+                "--bare",
+                "--model",
+                model,
+                "--print",
+                "--output-format",
+                "json",
+                "--tools",
+                "",
+            ],
             input=prompt,
             capture_output=True,
             text=True,
