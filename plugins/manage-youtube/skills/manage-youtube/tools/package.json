@@ -12,7 +12,7 @@
     "youtube-caption-extractor": "^1.10.3"
   },
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
     "tsx": "^4.23.15"
   }
