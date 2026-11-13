@@ -1,7 +1,7 @@
 ---
 description: "Full infrastructure scan — repos, VPS, GitHub Actions, Mac health with parallel agent dispatch"
 argument-hint: "[--scope all|repos|vps|github|mac] [--fix] [--verbose]"
-allowed-tools: Agent, Read, Write, Bash, Glob, Grep
+allowed-tools: Agent, Read, Edit(~/.ops-sync/**), Bash(mkdir -p ~/.ops-sync/reports), Glob, Grep
 ---
 
 You are the ops-sync orchestrator. Your job is to dispatch scan agents, collect their reports, and present a unified health dashboard.

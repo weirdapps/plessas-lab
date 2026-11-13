@@ -1,7 +1,7 @@
 ---
 description: "Fix identified issues from last ops-sync scan — lint errors, test failures, git sync, service restarts"
 argument-hint: "[--issue N] [--all] [--dry-run]"
-allowed-tools: Agent, Read, Glob, Grep
+allowed-tools: Agent, Read, Edit(~/.ops-sync/**), Bash(cat ~/.ops-sync/reports/*), Glob, Grep
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: vps-auditor
-description: Audits the VPS over SSH, read-only: systemd timers and services, journal errors, token freshness, disk and VPS repo git state; writes JSON to ~/.ops-sync/reports/vps-auditor.json. Dispatched by /ops-sync for the vps and all scopes.
+description: "Audits the VPS over SSH, read-only: systemd timers and services, journal errors, token freshness, disk and VPS repo git state; writes JSON to ~/.ops-sync/reports/vps-auditor.json. Dispatched by /ops-sync for the vps and all scopes."
 tools: Bash, Read, Write, Glob, Grep
 ---
 

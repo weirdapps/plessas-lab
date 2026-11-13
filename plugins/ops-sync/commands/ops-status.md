@@ -1,7 +1,7 @@
 ---
 description: "Quick status dashboard — cached from last scan or live git sweep"
 argument-hint: "[--live]"
-allowed-tools: Bash, Read, Glob, Grep
+allowed-tools: Read, Glob, Grep
 ---
 
 Quick infrastructure status check. Two modes:

@@ -1,7 +1,7 @@
 ---
 description: "Deep diagnostic of a specific subsystem — repos, VPS, GitHub, or Mac"
 argument-hint: "<subsystem> [name]  —  subsystems: repos, vps, github, mac"
-allowed-tools: Bash, Read, Glob, Grep
+allowed-tools: Read, Glob, Grep
 ---
 
 Deep diagnostic for a single subsystem. No agents — runs inline for fast response.

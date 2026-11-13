@@ -1,7 +1,7 @@
 ---
 description: "Strategic communication health report with relationship heatmap and delegation effectiveness"
 argument-hint: "[week|month] [--recipient NAME]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Glob, Grep
 ---
 
 <preflight>

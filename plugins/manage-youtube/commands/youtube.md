@@ -2,6 +2,7 @@
 description: Access YouTube content - search, get channel info, retrieve videos, transcripts
 argument-hint: "[search query, channel handle, or video URL]"
 allowed-tools: Skill(manage-youtube)
+disable-model-invocation: true
 ---
 
 <objective>

@@ -2,6 +2,7 @@
 description: Access and process Gmail messages
 argument-hint: "[operation: list|search|read|send|reply|forward|draft|profile]"
 allowed-tools: Skill(manage-gmail)
+disable-model-invocation: true
 ---
 
 # Gmail Command

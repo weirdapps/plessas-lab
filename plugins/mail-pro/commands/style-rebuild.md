@@ -1,7 +1,7 @@
 ---
 description: "Full corpus analysis of sent emails in the knowledge store to generate statistically-grounded style guide"
 argument-hint: "[--recipient NAME] [--dry-run]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Glob, Grep
 ---
 
 <preflight>
