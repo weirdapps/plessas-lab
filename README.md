@@ -67,7 +67,11 @@ git clone https://github.com/weirdapps/plessas-lab.git \
   ~/.claude/plugins/marketplaces/plessas-lab
 ```
 
-Then enable the plugins you want from the `/plugin` manager inside Claude Code.
+Then enable the plugins you want from the `/plugin` manager inside Claude Code, or install one in a single step (Claude Code 2.1.275 or later):
+
+```text
+/plugin install manage-gmail --marketplace weirdapps/plessas-lab
+```
 
 Update later with:
 

@@ -21,7 +21,7 @@ You only need OAuth setup if you want playlist management. Discovery tools work 
 ## Installation
 
 ```bash
-/plugin install manage-youtube
+/plugin install manage-youtube --marketplace weirdapps/plessas-lab
 ```
 
 For discovery tools, you're done — start asking Claude about YouTube channels or videos.

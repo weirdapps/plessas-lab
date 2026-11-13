@@ -15,7 +15,7 @@ See SKILL.md for detailed documentation.
 ## Installation
 
 ```bash
-/plugin install manage-apple-notes
+/plugin install manage-apple-notes --marketplace weirdapps/plessas-lab
 ```
 
 ## Usage

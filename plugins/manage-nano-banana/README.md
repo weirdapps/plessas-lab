@@ -17,7 +17,7 @@ Typical outputs land at `./output.png` (or a path you specify). Inputs can be a 
 ## Installation
 
 ```bash
-/plugin install manage-nano-banana
+/plugin install manage-nano-banana --marketplace weirdapps/plessas-lab
 ```
 
 Set your API key as an environment variable so the skill can reach Gemini:

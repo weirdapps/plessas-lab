@@ -17,7 +17,7 @@ Operations supported include: list/search messages, read message bodies + header
 ## Installation
 
 ```bash
-/plugin install manage-gmail
+/plugin install manage-gmail --marketplace weirdapps/plessas-lab
 ```
 
 Then complete the OAuth setup — it takes about 10 minutes the first time:
