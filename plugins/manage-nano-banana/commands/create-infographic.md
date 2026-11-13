@@ -1,10 +1,10 @@
 ---
-description: "Use the nano-banana skill to create a NBG themed infographic"
-argument-hint: "[command] [options]"
-allowed-tools: Skill(manage-nano-banana), Skill(manage-youtube), Bash
+description: "Creates a clean, landscape infographic in a fixed house style (teal #007b85 accent, white or transparent background, Roboto) with the nano-banana skill"
+argument-hint: "[what the infographic should explain]"
+allowed-tools: Skill(manage-nano-banana)
 ---
 
-# Create NBG Infographic
+# Create Infographic
 
 <objective>
 Delegate graphics creation to the manage-nano-banana skill.
