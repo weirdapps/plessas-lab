@@ -5,7 +5,7 @@ allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
 ---
 
 <preflight>
-## Pre-flight: knowledge store check (MANDATORY)
+## Pre-flight: knowledge store check (required)
 
 This command requires the **second-brain knowledge store** — a local SQLite database that ingests your sent/received email. It ships separately from `plessas-lab`.
 

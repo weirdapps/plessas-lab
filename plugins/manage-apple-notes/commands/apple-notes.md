@@ -1,7 +1,7 @@
 ---
 description: Access and manage Apple Notes (list, create, read, delete)
 argument-hint: "[operation: list|create|read|delete] [title] [content]"
-allowed-tools: Skill(manage-apple-notes), Bash
+allowed-tools: Skill(manage-apple-notes)
 ---
 
 # Apple Notes Command
