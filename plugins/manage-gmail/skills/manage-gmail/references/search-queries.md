@@ -94,7 +94,7 @@
 **Unread emails from boss in last week:**
 
 ```text
-from:boss@company.com is:unread newer_than:7d
+from:boss@example.com is:unread newer_than:7d
 ```
 
 **PDF attachments larger than 2MB:**
@@ -118,7 +118,7 @@ subject:meeting newer_than:30d older_than:7d
 **Emails from specific domain with attachments:**
 
 ```text
-from:@company.com has:attachment
+from:@example.com has:attachment
 ```
 
 **Unread starred emails in inbox:**
@@ -177,5 +177,5 @@ has:attachment larger:5M smaller:25M
 has:attachment newer_than:7d
 
 # Attachments from specific sender
-from:colleague@company.com has:attachment newer_than:30d
+from:colleague@example.com has:attachment newer_than:30d
 ```
