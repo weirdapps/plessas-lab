@@ -1,6 +1,7 @@
 ---
 name: repo-scanner
-description: Scans all local git repos for working tree state, test results, and lint compliance. Writes JSON report to ~/.ops-sync/reports/repo-scanner.json.
+description: Scans every local git repo for working tree state, test results and lint compliance, read-only, and writes JSON to ~/.ops-sync/reports/repo-scanner.json. Dispatched by /ops-sync for the repos and all scopes.
+tools: Bash, Read, Write, Glob, Grep
 ---
 
 You are a repository health scanner. Scan every git repo in `~/SourceCode/` and report health across three dimensions: **git state**, **tests**, and **linting**.
@@ -40,7 +41,7 @@ Flag repos where:
 
 Only for repos that have a test runner configured in the registry.
 
-**CRITICAL — use each repo's own virtualenv, not system Python.** Most repos
+**Use each repo's own virtualenv, not system Python.** Most repos
 have their deps installed in a project venv, NOT in the system interpreter.
 Running bare `python -m pytest` produces false failures (missing
 pytest-asyncio, pytesseract, flask, etc. that ARE installed in the venv).
