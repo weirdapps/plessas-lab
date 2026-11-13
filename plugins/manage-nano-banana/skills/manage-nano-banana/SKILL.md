@@ -27,7 +27,7 @@ Set `NANO_BANANA_FORCE_API_KEY=true` to force the API-key route.
 
 **Available Models**:
 
-- `gemini-2.5-flash-image` - Fast, efficient, ~$0.039/image, 1K resolution. Runs on Vertex **or** API key.
+- `gemini-2.5-flash-image` - Fast, efficient, ~\$0.039/image, 1K resolution. Runs on Vertex **or** API key.
 - `gemini-3-pro-image-preview` - High quality, up to 4K, advanced text rendering, up to 14 reference images. **API key only** (no Vertex publisher entry).
 
 **Aspect Ratios**: `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `9:16`, `16:9`, `21:9`

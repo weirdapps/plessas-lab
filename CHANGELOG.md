@@ -16,6 +16,8 @@ Standardised to Claude Code 2.1.323 plugin practice. Every plugin gets a patch b
 - `manage-gmail` and `manage-youtube` SKILL.md bodies are under 500 lines: per-operation detail moved, unchanged, into `references/operations.md`, `references/workflows.md` and `references/common-patterns.md`.
 - `ops-sync` agents declare least-privilege `tools:`; `/ops-sync` and `/ops-fix` no longer tell the orchestrator to pass a `model` on Agent calls; `/ops-fix` is `disable-model-invocation: true`.
 - `/gmail`, `/apple-notes` and `/create-infographic` no longer pre-approve every Bash command for their turn.
+- `allowed-tools` is narrowed in `/ops-sync`, `/ops-status`, `/ops-doctor` (`ops-sync`) and `/comm-report`, `/style-rebuild` (`mail-pro`): blanket `Bash`, `Write` and `Edit` grants are gone or scoped to the command's own report paths. These commands now ask for permission on shell commands and file writes they previously ran without a prompt.
+- Upgrade note for the rename: the old infographic command name no longer exists. Call `/create-infographic` instead; scripts or notes that name the old command need the same change.
 - Every plugin README has the one-step `/plugin install <name> --marketplace weirdapps/plessas-lab` line.
 
 ### Added
@@ -25,6 +27,7 @@ Standardised to Claude Code 2.1.323 plugin practice. Every plugin gets a patch b
 ### Fixed
 
 - `argument-hint` in `/gmail`, `/nano-banana` and `/youtube` parsed as a YAML list, not a string.
+- The `manage-nano-banana` SKILL.md price `~$0.039/image` is escaped as `~\$0.039/image`. Unescaped, `$0` is the first-argument placeholder, so a skill call with arguments printed the first argument in place of the price.
 
 ## [1.2.1] — 2026-09-23
 
