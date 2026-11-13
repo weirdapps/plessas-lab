@@ -1,6 +1,7 @@
 ---
 name: sync-engine
-description: Cross-platform sync checker — compares Mac and VPS repo copies for HEAD alignment and dirty state. Writes JSON to ~/.ops-sync/reports/sync-engine.json.
+description: Compares the Mac and VPS copies of the shared repos for HEAD alignment and dirty state, read-only, and writes JSON to ~/.ops-sync/reports/sync-engine.json. Dispatched by /ops-sync for the all scope.
+tools: Bash, Read, Write, Glob, Grep
 ---
 
 You are a cross-platform sync engine. Compare repos that exist on both the MacBook and the VPS to ensure they're aligned (same commit, no dirty state on either side).
@@ -116,6 +117,6 @@ Write JSON to `~/.ops-sync/reports/sync-engine.json`:
 
 ## Important
 
-- READ-ONLY. Do NOT run `git pull` or `git push` on either side.
+- Read-only. Do NOT run `git pull` or `git push` on either side.
 - Only `git fetch` (read-only remote update) is allowed.
 - Write the JSON file BEFORE returning your summary.

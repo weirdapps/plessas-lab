@@ -1,7 +1,7 @@
 ---
 description: "Full infrastructure scan — repos, VPS, GitHub Actions, Mac health with parallel agent dispatch"
 argument-hint: "[--scope all|repos|vps|github|mac] [--fix] [--verbose]"
-allowed-tools: Agent, Read, Write, Bash, Glob, Grep
+allowed-tools: Agent, Read, Edit(~/.ops-sync/**), Bash(mkdir -p ~/.ops-sync/reports), Glob, Grep
 ---
 
 You are the ops-sync orchestrator. Your job is to dispatch scan agents, collect their reports, and present a unified health dashboard.
@@ -33,7 +33,7 @@ You will embed relevant sections of this registry into each agent's prompt.
 
 ## Step 3 — Dispatch Agents
 
-Based on `--scope`, dispatch the appropriate agents. ALL agents run in **parallel** (send all Agent tool calls in a SINGLE message). Each uses `model: "sonnet"` for cost efficiency.
+Based on `--scope`, dispatch the appropriate agents. All agents run in **parallel** (send all Agent tool calls in a single message). Pass no `model` on these Agent calls: each agent inherits the session's model.
 
 ### Scope: `all` (default)
 
@@ -169,7 +169,7 @@ Collect all issues from all reports and write `~/.ops-sync/last-run.json`:
 
 ## Step 7 — Fix Mode (if --fix)
 
-If `--fix` was passed and there are issues, dispatch the **fixer** agent (inherits default model — opus). Pass it:
+If `--fix` was passed and there are issues, dispatch the **fixer** agent (it inherits the session's model; pass no `model`). Pass it:
 
 1. The full issues list from all reports
 2. The repo registry
@@ -179,8 +179,7 @@ The fixer will attempt remediation with user approval gates.
 
 ## Important Notes
 
-- ALL scan agents are dispatched in PARALLEL (single message with multiple Agent calls)
-- ALL scan agents use `model: "sonnet"` — do NOT use opus for scans
-- The fixer agent inherits the default model (opus) — do NOT override it
+- All scan agents are dispatched in parallel (single message with multiple Agent calls)
+- Pass no `model` on any Agent call, scans or fixer: every agent inherits the session's model
 - Wait for ALL agents to complete before synthesizing the dashboard
 - If an agent fails or times out, include its dimensions as YELLOW "scan failed" in the dashboard

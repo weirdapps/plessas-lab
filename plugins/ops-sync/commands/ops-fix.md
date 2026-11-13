@@ -1,7 +1,8 @@
 ---
 description: "Fix identified issues from last ops-sync scan — lint errors, test failures, git sync, service restarts"
 argument-hint: "[--issue N] [--all] [--dry-run]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Edit(~/.ops-sync/**), Bash(cat ~/.ops-sync/reports/*), Glob, Grep
+disable-model-invocation: true
 ---
 
 Fix issues identified by the last `/ops-sync` scan.
@@ -41,7 +42,7 @@ Otherwise, ask: "Which issue(s) to fix? Enter number(s), 'all', or 'cancel'."
 
 ## Step 3 — Dispatch Fixer
 
-Launch the **fixer** agent with the selected issues. The fixer inherits the default model (opus) for complex remediation.
+Launch the **fixer** agent with the selected issues. The fixer inherits the session's model; pass no `model`.
 
 Include in the fixer's prompt:
 
@@ -68,7 +69,7 @@ After the fixer completes, update `~/.ops-sync/last-run.json`:
 
 ## Important
 
-- The fixer agent inherits the session model (opus) — do NOT override
+- The fixer agent inherits the session model; pass no `model` on the Agent call
 - Pass the `--dry-run` flag through to the fixer if specified
 - The fixer has a strict safety contract — it will ask the user before any state-changing operation
 - After fixing, suggest running `/ops-sync --scope <relevant>` to verify the fixes

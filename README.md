@@ -14,19 +14,19 @@ Experimental Claude Code plugins by [weirdapps](https://weirdapps.github.io/resu
 
 A public Claude Code marketplace of seven plugins that reach outside the local machine: Google APIs (Gmail, YouTube, Gemini image generation), macOS-only tooling (Apple Notes), Microsoft Teams (an LLM-gated chat monitor), a private email knowledge store, and a fleet-wide ops engine that scans Mac + VPS + GitHub health.
 
-Companion to the sibling [`plessas-marketplace`](https://github.com/weirdapps/plessas-marketplace), which ships stable Microsoft 365 workplace plugins (mail, chat, decks, meetings, excel, docs) that work out of the box for any NBG colleague. Anything that needs Google OAuth, a Gemini API key, macOS-only APIs, SSH to a VPS, or the maintainer's private `second-brain` SQLite store lives here instead.
+Companion to the sibling [`plessas-marketplace`](https://github.com/weirdapps/plessas-marketplace), which ships stable Microsoft 365 workplace plugins (mail, chat, decks, meetings, excel, docs) that work out of the box on Microsoft 365. Anything that needs Google OAuth, a Gemini API key, macOS-only APIs, SSH to a VPS, or the maintainer's private `second-brain` SQLite store lives here instead.
 
 ## Plugins
 
 | Plugin | Version | Slash commands | What it does |
 |---|---|---|---|
-| [`manage-apple-notes`](./plugins/manage-apple-notes/) | 1.0.0 | `/apple-notes` | CRUD for Apple Notes via `osascript`. macOS only; the scripts exit cleanly on other platforms. Ships a `manage-apple-notes` skill. |
-| [`manage-gmail`](./plugins/manage-gmail/) | 1.0.1 | `/gmail` | Gmail API (list, search, read, send, reply, forward, draft, profile). Node CLI under `skills/manage-gmail/scripts/`. OAuth 2.0 Desktop client required. |
-| [`manage-nano-banana`](./plugins/manage-nano-banana/) | 1.0.1 | `/nano-banana`, `/create-nbg-infographic` | Image generation and editing via Google Gemini image models (`gemini-2.5-flash-image`, `gemini-3-pro-image-preview`). Works over Vertex AI (ADC) or a `GEMINI_API_KEY`. |
-| [`manage-youtube`](./plugins/manage-youtube/) | 1.0.1 | `/youtube` | TypeScript CLI over YouTube: channel info, channel search, channel videos, transcripts, favorites, and playlist auth / manage / sync. Discovery works with no auth; playlist management needs YouTube Data API v3 OAuth. |
-| [`chat-watch`](./plugins/chat-watch/) | 0.1.1 (experimental) | none (Python worker) | Polls Microsoft Teams chats and posts `[Claude]`-prefixed replies through an LLM gate. Long-lived process (launchd / systemd). Requires `teams-cli` authenticated. |
-| [`mail-pro`](./plugins/mail-pro/) | 1.0.0 | `/comm-report`, `/style-rebuild` | Corpus-driven companion to `mail`: relationship analytics and style-guide rebuild against a private `second-brain` SQLite store. Maintainer-only. |
-| [`ops-sync`](./plugins/ops-sync/) | 1.0.3 | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Fleet health engine. Six agents (`repo-scanner`, `vps-auditor`, `github-checker`, `mac-auditor`, `sync-engine`, `fixer`) scan local repos, Hetzner VPS systemd timers, GitHub Actions, Mac LaunchAgents, and Mac / VPS HEAD alignment. Optional remediation. |
+| [`manage-apple-notes`](./plugins/manage-apple-notes/) | 1.0.2 | `/apple-notes` | CRUD for Apple Notes via `osascript`. macOS only; the scripts exit cleanly on other platforms. Ships a `manage-apple-notes` skill. |
+| [`manage-gmail`](./plugins/manage-gmail/) | 1.0.6 | `/gmail` | Gmail API (list, search, read, send, reply, forward, draft, profile). Node CLI under `skills/manage-gmail/scripts/`. OAuth 2.0 Desktop client required. |
+| [`manage-nano-banana`](./plugins/manage-nano-banana/) | 1.0.7 | `/nano-banana`, `/create-infographic` | Image generation and editing via Google Gemini image models (`gemini-2.5-flash-image`, `gemini-3-pro-image-preview`). Works over Vertex AI (ADC) or a `GEMINI_API_KEY`. |
+| [`manage-youtube`](./plugins/manage-youtube/) | 1.0.8 | `/youtube` | TypeScript CLI over YouTube: channel info, channel search, channel videos, transcripts, favorites, and playlist auth / manage / sync. Discovery works with no auth; playlist management needs YouTube Data API v3 OAuth. |
+| [`chat-watch`](./plugins/chat-watch/) | 0.1.4 (experimental) | none (Python worker) | Polls Microsoft Teams chats and posts `[Claude]`-prefixed replies through an LLM gate. Long-lived process (launchd / systemd). Requires `teams-cli` authenticated. |
+| [`mail-pro`](./plugins/mail-pro/) | 1.0.2 | `/comm-report`, `/style-rebuild` | Corpus-driven companion to `mail`: relationship analytics and style-guide rebuild against a private `second-brain` SQLite store. Maintainer-only. |
+| [`ops-sync`](./plugins/ops-sync/) | 1.0.4 | `/ops-sync`, `/ops-status`, `/ops-fix`, `/ops-doctor` | Fleet health engine. Six agents (`repo-scanner`, `vps-auditor`, `github-checker`, `mac-auditor`, `sync-engine`, `fixer`) scan local repos, Hetzner VPS systemd timers, GitHub Actions, Mac LaunchAgents, and Mac / VPS HEAD alignment. Optional remediation. |
 
 ## Architecture
 
@@ -67,7 +67,11 @@ git clone https://github.com/weirdapps/plessas-lab.git \
   ~/.claude/plugins/marketplaces/plessas-lab
 ```
 
-Then enable the plugins you want from the `/plugin` manager inside Claude Code.
+Then enable the plugins you want from the `/plugin` manager inside Claude Code, or install one in a single step (Claude Code 2.1.275 or later):
+
+```text
+/plugin install manage-gmail --marketplace weirdapps/plessas-lab
+```
 
 Update later with:
 
@@ -83,7 +87,7 @@ Typical entry points once a plugin is enabled:
 /apple-notes create "Weekly review" "..."
 /gmail search from:boss@example.com after:2026/06/01
 /nano-banana create a hero image for a fintech landing page
-/create-nbg-infographic quarterly card revenue mix
+/create-infographic quarterly revenue mix
 /youtube channel @veritasium
 /comm-report month --recipient <surname>
 /style-rebuild

@@ -1,6 +1,6 @@
 ---
 description: Generate or edit images, create diagrams and visualizations using Nano Banana API
-argument-hint: [task description - e.g., "create an architecture diagram for microservices"]
+argument-hint: '[task description, e.g. "create an architecture diagram for microservices"]'
 allowed-tools: Skill(manage-nano-banana)
 ---
 

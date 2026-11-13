@@ -1,6 +1,6 @@
 ---
 name: manage-apple-notes
-description: Interact with the Apple Notes app. CRUD operations for persistent storage of thoughts, data, and information across sessions.
+description: Creates, lists, reads and deletes notes in the macOS Apple Notes app (inside an `agent-notes` folder) and attaches clipboard images to them, so thoughts, data and reference material persist across sessions. Use when the user asks to save something to Apple Notes, to keep a list or reminder there, or to read back a note kept there. macOS only. Do NOT use for Claude's own working memory or project notes kept in files (use the memory files or a remember skill) unless the user names Apple Notes.
 license: MIT License
 metadata:
   author: "lucek.ai"
@@ -12,6 +12,12 @@ metadata:
 ## Overview
 
 Tools to interact with Apple Notes. Notes are scoped to an automatically created `agent-notes` folder. Notes are formatted using HTML—supported elements are listed below.
+
+<!-- safety-guardrails:v1 -->
+## Destructive-action safety
+
+- Delete is irreversible — confirm the exact note before deleting.
+- Edit = delete + recreate: if recreation fails, the original content is lost. Capture the existing body first, and confirm before replacing.
 
 ## When to Use
 
@@ -86,9 +92,3 @@ python scripts/attach-clipboard-image.py --title "My Note" --label "screenshot.p
 - **Images via base64** - Technically possible but impractical; use clipboard attachment instead
 - **Clipboard Images** - ✅ Supported via `attach-clipboard-image.py` (copies image from clipboard to note)
 - **File Attachments** - Only images from clipboard are supported; other file types cannot be added programmatically
-
-<!-- safety-guardrails:v1 -->
-## Destructive-action safety
-
-- Delete is irreversible — confirm the exact note before deleting.
-- Edit = delete + recreate: if recreation fails, the original content is lost. Capture the existing body first, and confirm before replacing.

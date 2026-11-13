@@ -40,6 +40,10 @@ Three reasons:
 
 ## Install
 
+```bash
+/plugin install mail-pro --marketplace weirdapps/plessas-lab
+```
+
 `mail-pro` is part of the `plessas-lab` marketplace. It auto-installs alongside the other plugins. To use the commands, you additionally need:
 
 ```bash

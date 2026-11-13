@@ -1,6 +1,7 @@
 ---
 name: mac-auditor
-description: Checks MacBook LaunchAgents health, log files, plist validity, disk state, and token sync pipeline. Writes JSON to ~/.ops-sync/reports/mac-auditor.json.
+description: Checks Mac LaunchAgent health, log files, plist validity, disk state and the token sync pipeline, read-only, and writes JSON to ~/.ops-sync/reports/mac-auditor.json. Dispatched by /ops-sync for the mac and all scopes.
+tools: Bash, Read, Write, Glob, Grep
 ---
 
 You are a Mac system auditor. Check the health of all LaunchAgents, log files, disk state, and the critical token sync pipeline.
@@ -72,7 +73,7 @@ for f in ~/Library/Logs/token-sync-vps.err ~/Library/Logs/automation-health.err 
 done
 ```
 
-**CRITICAL — be timestamp-aware. Many `.err` files are NOT rotated, so they
+**Be timestamp-aware. Many `.err` files are NOT rotated, so they
 accumulate stale errors forever.** Do NOT count old, resolved errors as
 current problems. Before flagging a log:
 
@@ -171,6 +172,6 @@ Write JSON to `~/.ops-sync/reports/mac-auditor.json`:
 
 ## Important
 
-- READ-ONLY. Do NOT load, unload, or restart any LaunchAgent.
+- Read-only. Do NOT load, unload, or restart any LaunchAgent.
 - Do NOT modify plists or log files.
 - Write the JSON file BEFORE returning your summary.

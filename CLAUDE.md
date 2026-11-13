@@ -11,7 +11,7 @@ require external API setup or are experimental in scope.
 |--------|----------|-------|
 | `manage-apple-notes` | `/apple-notes` | CRUD for Apple Notes via osascript. macOS only; exits with a platform error on non-Mac. |
 | `manage-gmail` | `/gmail` | Gmail API read/search/send/reply/forward. Requires OAuth 2.0 setup (`credentials.json` + `token.json` kept outside the repo). |
-| `manage-nano-banana` | `/nano-banana`, `/create-nbg-infographic` | Image generation and editing via Google's Gemini image API. Requires a Gemini API key. |
+| `manage-nano-banana` | `/nano-banana`, `/create-infographic` | Image generation and editing via Google's Gemini image API. Requires a Gemini API key. |
 | `manage-youtube` | `/youtube` | YouTube search, channel info, video transcripts, playlist management. Ships TypeScript CLI tools; OAuth required for write operations. |
 | `chat-watch` | _(none: Python CLI)_ | **Retired 2026-09-29: no longer deployed on any host; the code is kept for reference.** Long-running Teams chat monitor with LLM gate. No slash command; run `monitor.py` directly or via launchd/systemd. Config lives at `~/.claude/chat-watch/` (outside the repo). |
 | `mail-pro` | `/comm-report`, `/style-rebuild` | Email corpus analytics add-on requiring the `second-brain` private knowledge store. Companion to the `mail` plugin in `plessas-marketplace`. |

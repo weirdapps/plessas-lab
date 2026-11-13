@@ -1,11 +1,11 @@
 ---
 description: "Strategic communication health report with relationship heatmap and delegation effectiveness"
 argument-hint: "[week|month] [--recipient NAME]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Glob, Grep
 ---
 
 <preflight>
-## Pre-flight: knowledge store check (MANDATORY)
+## Pre-flight: knowledge store check (required)
 
 This command requires the **second-brain knowledge store** — a local SQLite database that ingests your sent/received email. It ships separately from `plessas-lab`.
 

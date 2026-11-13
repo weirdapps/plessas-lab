@@ -17,7 +17,7 @@ Typical outputs land at `./output.png` (or a path you specify). Inputs can be a 
 ## Installation
 
 ```bash
-/plugin install manage-nano-banana
+/plugin install manage-nano-banana --marketplace weirdapps/plessas-lab
 ```
 
 Set your API key as an environment variable so the skill can reach Gemini:
@@ -32,9 +32,9 @@ Add it to `~/.zshrc` or `~/.bashrc` to persist across sessions. The skill reads 
 
 This plugin provides the `manage-nano-banana` skill which Claude invokes automatically. Say "generate an image of...", "create a diagram showing...", or "edit this image to..." and Claude routes to the skill.
 
-There's also one slash command that wraps the skill with NBG branding:
+There's also one slash command that wraps the skill with a fixed house style:
 
-- `/create-nbg-infographic` — generates landscape infographics with the NBG accent colour `#007b85` and Roboto font.
+- `/create-infographic`: generates landscape infographics with a teal `#007b85` accent, a white or transparent background and the Roboto font.
 
 ## Documentation
 

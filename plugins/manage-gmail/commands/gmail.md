@@ -1,7 +1,8 @@
 ---
 description: Access and process Gmail messages
-argument-hint: [operation: list|search|read|send|reply|forward|draft|profile]
-allowed-tools: Skill(manage-gmail), Bash
+argument-hint: "[operation: list|search|read|send|reply|forward|draft|profile]"
+allowed-tools: Skill(manage-gmail)
+disable-model-invocation: true
 ---
 
 # Gmail Command
@@ -19,7 +20,7 @@ This routes to the specialized skill containing Gmail API patterns, authenticati
 </process>
 
 <destructive_operations>
-The following operations modify or remove mailbox state and MUST be confirmed
+The following operations modify or remove mailbox state and must be confirmed
 with the user explicitly before execution. Do not infer intent from prior
 context — always pause and quote the exact operation back to the user for
 yes/no approval, even if the user said "go ahead" earlier in the conversation.

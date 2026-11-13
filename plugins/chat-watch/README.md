@@ -13,6 +13,14 @@ Per-chat configuration (id, prompt, rate limits, dry-run) lives in **`~/.claude/
 
 The repo only ships sanitized templates: `chats.example.json`, `prompts/example_group.txt`, `prompts/example_one_to_one.txt`.
 
+## Install
+
+```bash
+/plugin install chat-watch --marketplace weirdapps/plessas-lab
+```
+
+The plugin ships no slash command; installing it puts `monitor.py` and the templates on disk. Run the worker as described below.
+
 ## First-time setup
 
 ```bash

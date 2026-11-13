@@ -117,9 +117,10 @@ UNTRACKED_PATHS=$($GIT_LS --others --exclude-standard 2>/dev/null || true)
 # The normalisation matters more than case does. Filenames join words with _ .
 # or -, so a pattern written "two words" matches prose and misses Two_words.png.
 # Without it this check finds nothing at all, which would make it a check that
-# exists only to look reassuring. It is load-bearing here: the one filename hit
-# in this repo, plugins/manage-nano-banana/commands/create-nbg-infographic.md,
-# needs BOTH -i and the separator split to be seen.
+# exists only to look reassuring. It was load-bearing here: the one filename hit
+# this repo ever had, a command file whose name joined the employer
+# abbreviation to other words with hyphens (since renamed), needed BOTH -i and
+# the separator split to be seen.
 #
 # One consequence: a `$`-anchored pattern would anchor to the normalised half.
 # No pattern in use is `$`-anchored.
@@ -176,7 +177,8 @@ scan_ci() {
   # while the local doctor was not, so the check that blocks a push was the
   # weaker of the two, which is backwards. Measured over this repo's tracked
   # tree, that single missing flag hid four employer-name lines from CI that
-  # the doctor caught, all of them the lowercase `nbg` in create-nbg-infographic.
+  # the doctor caught, all of them the lowercase abbreviation inside one
+  # hyphenated command name (since renamed).
   if [ -s "$TRACKED_TMP" ]; then
     tr '\n' '\0' < "$TRACKED_TMP" | xargs -0 grep -inE --binary-files=without-match "$pattern" 2>/dev/null || true
   fi
@@ -462,7 +464,8 @@ check_shape() {
 #   and `firstname@...` as readily as the placeholders they were meant to name.
 #   Grepped over the tracked tree, every occurrence in this repo is
 #   `user@example.com` inside the manage-gmail skill docs, and none of them is
-#   an @nbg.gr address, so the mail-domain check could never have fired on one.
+#   an address at the employer mail domain, so that check could never have
+#   fired on one.
 #   They excluded nothing real and were dropped rather than anchored.
 #
 #   The fixture-host alternation `(test|...|a|b|x|y|z)(-my)?\.sharepoint` was

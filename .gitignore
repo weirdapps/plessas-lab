@@ -62,3 +62,6 @@ client_secret*.json
 # in a global ignore file, which is machine-local and protects neither a fresh
 # clone nor CI nor the VPS copy.
 .env.*
+
+# Plugin eval run output (claude plugin eval)
+plugins/*/evals/results/

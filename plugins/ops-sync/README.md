@@ -5,6 +5,12 @@ Hetzner VPS, and GitHub. A parallel multi-agent plugin that scans git state,
 tests, lint, CI/CD, systemd timers, LaunchAgents, and token freshness, then
 reports a RED/YELLOW/GREEN dashboard and can remediate.
 
+## Install
+
+```bash
+/plugin install ops-sync --marketplace weirdapps/plessas-lab
+```
+
 ## Commands
 
 | Command | What it does |

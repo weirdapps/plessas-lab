@@ -1,7 +1,9 @@
 ---
 name: manage-nano-banana
-description: Generate and edit images, create diagrams, infographics, and visualizations using Google's Nano Banana API (Gemini Image Generation). Use when the user asks to create images, edit existing images, generate architecture diagrams, flowcharts, ERDs, timelines, or any visual artifacts.
+description: Generates and edits images and draws diagrams, infographics and other visuals (architecture diagrams, flowcharts, ERDs, timelines) as image files with Google's Gemini image models (Nano Banana), through bundled TypeScript tools. Use when the user asks to create an image, edit an existing image, or produce a diagram or visual as a picture. Do NOT use for data charts that must show exact numbers (draw those in code with a charting or dataviz skill).
 ---
+
+# Nano Banana
 
 > **Path Convention**: All paths in this document are relative to this skill's root directory. When executing commands, first `cd` to the skill directory or adjust paths accordingly.
 
@@ -25,7 +27,7 @@ Set `NANO_BANANA_FORCE_API_KEY=true` to force the API-key route.
 
 **Available Models**:
 
-- `gemini-2.5-flash-image` - Fast, efficient, ~$0.039/image, 1K resolution. Runs on Vertex **or** API key.
+- `gemini-2.5-flash-image` - Fast, efficient, ~\$0.039/image, 1K resolution. Runs on Vertex **or** API key.
 - `gemini-3-pro-image-preview` - High quality, up to 4K, advanced text rendering, up to 14 reference images. **API key only** (no Vertex publisher entry).
 
 **Aspect Ratios**: `1:1`, `2:3`, `3:2`, `3:4`, `4:3`, `4:5`, `5:4`, `9:16`, `16:9`, `21:9`

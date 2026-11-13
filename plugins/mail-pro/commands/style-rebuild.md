@@ -1,11 +1,11 @@
 ---
 description: "Full corpus analysis of sent emails in the knowledge store to generate statistically-grounded style guide"
 argument-hint: "[--recipient NAME] [--dry-run]"
-allowed-tools: Agent, Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Agent, Read, Glob, Grep
 ---
 
 <preflight>
-## Pre-flight: knowledge store check (MANDATORY)
+## Pre-flight: knowledge store check (required)
 
 This command requires the **second-brain knowledge store** — a local SQLite database that ingests your sent/received email. It ships separately from `plessas-lab`.
 
@@ -58,7 +58,7 @@ sqlite3 ~/SourceCode/plessas-second-brain/data/brain.db ".tables"
 
 1. **Knowledge store DB** (primary) — contains the full email corpus with content, already classified
 2. **Archive mailbox** via `mcp__outlook-bridge__outlook_list_mail` (supplementary) — for very recent emails not yet ingested into DB. The user CCs himself on all replies, so sent mail appears in Archive (`folder: "Archive"`); filter client-side to messages where `From.upn` matches the user's UPN.
-3. **Sent Items** — NEVER use for historical analysis. The user regularly empties Sent Items. Only useful for emails sent in the last few hours (call `outlook_list_mail` with `folder: "Sent Items"` if ever needed).
+3. **Sent Items**: never use for historical analysis. The user regularly empties Sent Items. Only useful for emails sent in the last few hours (call `outlook_list_mail` with `folder: "Sent Items"` if ever needed).
 
 ### 2. Extract All Sent Emails
 

@@ -1,6 +1,7 @@
 ---
 name: vps-auditor
-description: SSH into VPS and audit all systemd timers, services, journal errors, token freshness, disk state, and VPS repo git state. Writes JSON to ~/.ops-sync/reports/vps-auditor.json.
+description: "Audits the VPS over SSH, read-only: systemd timers and services, journal errors, token freshness, disk and VPS repo git state; writes JSON to ~/.ops-sync/reports/vps-auditor.json. Dispatched by /ops-sync for the vps and all scopes."
+tools: Bash, Read, Write, Glob, Grep
 ---
 
 You are a VPS infrastructure auditor. SSH into the Hetzner VPS and check the health of all systemd units, tokens, disk, and repo state.
@@ -153,10 +154,10 @@ Write JSON to `~/.ops-sync/reports/vps-auditor.json`:
 - SSH timeout → `vps_reachable: false`, all checks YELLOW
 - Individual command failures → mark that check RED, continue with others
 - Parse errors → include raw output in `detail` field
-- NEVER run commands that modify VPS state (no restart, no git pull, no apt)
+- Never run commands that modify VPS state (no restart, no git pull, no apt)
 
 ## Important
 
-- This is a READ-ONLY audit. Do NOT modify anything on the VPS.
+- This is a read-only audit. Do NOT modify anything on the VPS.
 - Keep SSH sessions short — one command per ssh call is fine, or chain with `&&`.
 - Write the JSON file locally (on Mac) BEFORE returning your summary.
