@@ -1,6 +1,6 @@
 ---
 description: Access and process Gmail messages
-argument-hint: [operation: list|search|read|send|reply|forward|draft|profile]
+argument-hint: "[operation: list|search|read|send|reply|forward|draft|profile]"
 allowed-tools: Skill(manage-gmail), Bash
 ---
 
