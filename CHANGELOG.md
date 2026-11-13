@@ -5,6 +5,27 @@ All notable changes to plessas-lab marketplace will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.8] - 2026-11-13
+
+Standardised to Claude Code 2.1.323 plugin practice. Every plugin gets a patch bump.
+
+### Changed
+
+- The `manage-nano-banana` infographic command is renamed to `/create-infographic`, because its old name carried the employer name. The style rules are unchanged. `.pii-gauntlet-allow-employer-name` is deleted, so the gauntlet's employer check runs again.
+- Skill descriptions are third person, lead with the key use case and name what each skill is not for. Every SKILL.md opens with a title and puts its destructive-action rules first.
+- `manage-gmail` and `manage-youtube` SKILL.md bodies are under 500 lines: per-operation detail moved, unchanged, into `references/operations.md`, `references/workflows.md` and `references/common-patterns.md`.
+- `ops-sync` agents declare least-privilege `tools:`; `/ops-sync` and `/ops-fix` no longer tell the orchestrator to pass a `model` on Agent calls; `/ops-fix` is `disable-model-invocation: true`.
+- `/gmail`, `/apple-notes` and `/create-infographic` no longer pre-approve every Bash command for their turn.
+- Every plugin README has the one-step `/plugin install <name> --marketplace weirdapps/plessas-lab` line.
+
+### Added
+
+- Routing eval suites (`evals/`, three cases each) for `manage-apple-notes`, `manage-gmail`, `manage-nano-banana` and `manage-youtube`.
+
+### Fixed
+
+- `argument-hint` in `/gmail`, `/nano-banana` and `/youtube` parsed as a YAML list, not a string.
+
 ## [1.2.1] — 2026-09-23
 
 ### Added
