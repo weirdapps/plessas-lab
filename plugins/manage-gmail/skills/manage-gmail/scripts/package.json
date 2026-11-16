@@ -14,7 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
-    "commander": "^15.0.0",
+    "commander": "^15.1.0",
     "google-auth-library": "^11.3.4",
     "googleapis": "^189.0.0"
   },
