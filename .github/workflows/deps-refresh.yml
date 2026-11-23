@@ -8,7 +8,7 @@ permissions:
   pull-requests: write
 jobs:
   refresh:
-    uses: weirdapps/shared-workflows/.github/workflows/deps-refresh.yml@f0ea8181790f73c2ea6a61e186a4a2762299a12d  # main
+    uses: weirdapps/shared-workflows/.github/workflows/deps-refresh.yml@d54a5a6927a570766f10cd8bb549adcc8a45030c  # main
     with:
       node_version: '22'
       gate_cmd: npm test
